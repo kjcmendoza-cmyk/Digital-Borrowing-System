@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>AdDU EE Lab - Digital Inventory & Borrowing System</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- HTML5 QR Code Scanner Library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  
+  <!-- Firebase SDKs (Compat version for standard script execution) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    /* PWA Mobile Optimization */
+    body { -webkit-tap-highlight-color: transparent; user-select: none; }
+    .offline-banner { display: none; }
+    body.is-offline .offline-banner { display: flex; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+
+  <!-- Offline Status Bar (PWA Fault-Tolerance) -->
+  <div class="offline-banner bg-amber-500 text-slate-950 font-bold text-xs px-4 py-2 justify-between items-center sticky top-0 z-50 shadow-md">
+    <span>⚠️ EE Lab Wi-Fi Offline — Operating on Cached Session & Local Queue</span>
+    <span class="bg-amber-700 text-white text-[10px] px-2 py-0.5 rounded-full uppercase">Offline Mode</span>
+  </div>
+
+  <!-- Header / Navigation -->
+  <header class="bg-slate-800 border-b border-slate-700 px-4 py-3 flex justify-between items-center sticky top-0 z-40">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-lg">
+        EE
+      </div>
+      <div>
+        <h1 class="text-sm font-bold leading-tight">AdDU EE Equipment Log</h1>
+        <p class="text-[11px] text-slate-400">Ateneo de Davao University</p>
+      </div>
+    </div>
+    
+    <!-- User Profile / Auth Action -->
+    <div id="user-profile-section" class="flex items-center gap-2">
+      <button id="btn-login" onclick="handleGoogleLogin()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-md font-semibold transition">
+        Sign In (@addu.edu.ph)
+      </button>
+      <div id="user-info" class="hidden flex items-center gap-2">
+        <div class="text-right">
+          <p id="user-name" class="text-xs font-semibold leading-none"></p>
+          <span id="user-role" class="text-[10px] text-blue-400 font-mono">STUDENT</span>
+        </div>
+        <button onclick="handleLogout()" class="text-slate-400 hover:text-rose-400 text-xs px-2 py-1">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Container -->
+  <main class="flex-1 max-w-2xl w-full mx-auto p-4 flex flex-col gap-4">
+
+    <!-- LOGIN REQUIRED BANNER (When unauthenticated) -->
+    <section id="view-unauth" class="bg-slate-800 border border-slate-700 rounded-xl p-6 text-center my-auto">
+      <div class="w-16 h-16 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔒</div>
+      <h2 class="text-lg font-bold mb-1">Authentication Required</h2>
+      <p class="text-xs text-slate-400 mb-6">Please sign in using your official Ateneo de Davao Google email (@addu.edu.ph) to access equipment borrowing.</p>
+      <button onclick="handleGoogleLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg text-sm shadow-md transition">
+        Authenticate with AdDU SSO
+      </button>
+    </section>
+
+    <!-- AUTHENTICATED WORKSPACE -->
+    <div id="view-authenticated" class="hidden flex flex-col gap-4">
+
+      <!-- Navigation Tabs -->
+      <div class="grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700 text-xs font-medium text-center">
+        <button id="tab-btn-scan" onclick="switchTab('scan')" class="py-2 rounded-lg bg-blue-600 text-white font-semibold transition">Express Scan</button>
+        <button id="tab-btn-borrows" onclick="switchTab('borrows')" class="py-2 rounded-lg text-slate-400 hover:text-slate-200 transition">My Borrows</button>
+        <button id="tab-btn-return" onclick="switchTab('return')" class="py-2 rounded-lg text-slate-400 hover:text-slate-200 transition">Express Return</button>
+      </div>
+
+      <!-- TAB 1: SCAN & CHECKOUT WORKFLOW -->
+      <section id="tab-content-scan" class="flex flex-col gap-4">
+        <!-- Camera Scanner Card -->
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+          <div class="flex justify-between items-center mb-3">
+            <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Asset QR Scanner</h2>
+            <span class="text-[11px] text-slate-400">Target: Rack or Tool Vinyl Tag</span>
+          </div>
+          
+          <div id="qr-reader" class="overflow-hidden rounded-lg bg-slate-950 border border-slate-800 min-h-[220px]"></div>
+          
+          <p class="text-[11px] text-slate-400 text-center mt-3">
+            Position QR tag inside viewfinder for instant checkout token generation.
+          </p>
+        </div>
+
+        <!-- Quick Manual Bin/Tag Entry (Fallback) -->
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+          <label class="block text-xs font-medium text-slate-300 mb-2">Manual Tag Lookup</label>
+          <div class="flex gap-2">
+            <input type="text" id="manual-tag-input" placeholder="e.g. EE-SCOPE-04 or B-3-12" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs flex-1 text-slate-100 focus:outline-none focus:border-blue-500 font-mono" />
+            <button onclick="processAssetScan(document.getElementById('manual-tag-input').value)" class="bg-slate-700 hover:bg-slate-600 text-xs px-4 py-2 rounded-lg font-semibold transition">Audit</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: ACTIVE BORROWS & DIGITAL RECEIPTS -->
+      <section id="tab-content-borrows" class="hidden flex flex-col gap-3">
+        <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Active Custody & Offline Receipts</h2>
+        <div id="active-borrows-list" class="flex flex-col gap-2">
+          <!-- Populated via Firestore Listener -->
+          <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center text-xs text-slate-400">
+            No active tools checked out under your account.
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: DUAL-MODE EXPRESS RETURN STAGING -->
+      <section id="tab-content-return" class="hidden flex flex-col gap-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+          <h2 class="text-sm font-bold mb-1">Express Drop-Box Staging</h2>
+          <p class="text-xs text-slate-400 mb-4">Skip the return queue. Place items on the shelf, scan the shelf QR tag, and trigger a "Pending Inspection" hold.</p>
+          
+          <button onclick="triggerExpressReturnModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-lg text-xs shadow-md transition">
+            Scan Staging Shelf Tag
+          </button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- MODAL 1: SMART KIT CHECKLIST (Feature #4) -->
+  <div id="modal-kit-checklist" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-5 flex flex-col gap-4 shadow-2xl">
+      <div class="border-b border-slate-700 pb-3">
+        <span class="text-[10px] text-blue-400 font-mono font-bold">SMART KIT AUDIT REQUIRED</span>
+        <h3 id="kit-title" class="text-base font-bold text-slate-100">Tektronix Oscilloscope (EE-SCOPE-04)</h3>
+        <p class="text-xs text-slate-400">Verify all mandatory sub-components prior to checkout:</p>
+      </div>
+
+      <form id="kit-checklist-form" class="flex flex-col gap-2.5">
+        <label class="flex items-center gap-3 bg-slate-900/50 p-2.5 rounded-lg border border-slate-700/60 cursor-pointer text-xs">
+          <input type="checkbox" required class="w-4 h-4 accent-blue-600 rounded" />
+          <span>Channel 1 Probe (10x attenuation)</span>
+        </label>
+        <label class="flex items-center gap-3 bg-slate-900/50 p-2.5 rounded-lg border border-slate-700/60 cursor-pointer text-xs">
+          <input type="checkbox" required class="w-4 h-4 accent-blue-600 rounded" />
+          <span>Channel 2 Probe (10x attenuation)</span>
+        </label>
+        <label class="flex items-center gap-3 bg-slate-900/50 p-2.5 rounded-lg border border-slate-700/60 cursor-pointer text-xs">
+          <input type="checkbox" required class="w-4 h-4 accent-blue-600 rounded" />
+          <span>AC 220V Power Cable</span>
+        </label>
+        <label class="flex items-center gap-3 bg-slate-900/50 p-2.5 rounded-lg border border-slate-700/60 cursor-pointer text-xs">
+          <input type="checkbox" required class="w-4 h-4 accent-blue-600 rounded" />
+          <span>2x Ground Crocodile Clips</span>
+        </label>
+
+        <div class="mt-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] p-2 rounded">
+          ⚠️ <strong>Strict Lockout:</strong> Peer-to-peer pass-offs are prohibited. You remain liable for missing accessories.
+        </div>
+
+        <div class="flex gap-2 mt-3">
+          <button type="button" onclick="closeKitModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-xs py-2 rounded-lg font-semibold">Cancel</button>
+          <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-2 rounded-lg font-semibold">Confirm & Borrow</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+ <!-- APPLICATION LOGIC & FIREBASE v13 MODULAR CONFIGURATION -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+    import { 
+      getAuth, 
+      GoogleAuthProvider, 
+      signInWithPopup, 
+      signOut, 
+      onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+    import { 
+      getFirestore, 
+      enableIndexedDbPersistence, 
+      collection, 
+      addDoc, 
+      onSnapshot, 
+      query, 
+      where, 
+      updateDoc, 
+      doc, 
+      serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+    // 1. Firebase Credentials from your Console setup
+    const firebaseConfig = {
+      apiKey: "AIzaSyAjkdbUSY5yTqWmDVGWL_RSC0p2KbI49Rg",
+      authDomain: "digital-borrowing-system.firebaseapp.com",
+      projectId: "digital-borrowing-system",
+      storageBucket: "digital-borrowing-system.firebasestorage.app",
+      messagingSenderId: "446897129489",
+      appId: "1:446897129489:web:8cc4aab0bbaef6b5ea49b0",
+      measurementId: "G-R3BMR771SN"
+    };
+
+    // 2. Initialize Firebase & Firestore
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Enable Offline Persistence for Shielded EE Lab Rooms
+    enableIndexedDbPersistence(db).catch((err) => {
+      console.warn("Firestore offline persistence warning:", err.code);
+    });
+
+    // Offline Network Status Detector
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    function updateOnlineStatus() {
+      if (navigator.onLine) {
+        document.body.classList.remove('is-offline');
+      } else {
+        document.body.classList.add('is-offline');
+      }
+    }
+    updateOnlineStatus();
+
+    let currentUser = null;
+    let html5QrcodeScanner = null;
+
+    // 3. Auth Listener
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        if (!user.email.endsWith('@addu.edu.ph')) {
+          alert("Unauthorized access. You must use an official @addu.edu.ph email account.");
+          signOut(auth);
+          return;
+        }
+        currentUser = user;
+        document.getElementById('view-unauth').classList.add('hidden');
+        document.getElementById('view-authenticated').classList.remove('hidden');
+        document.getElementById('user-profile-section').querySelector('#btn-login').classList.add('hidden');
+        document.getElementById('user-info').classList.remove('hidden');
+        document.getElementById('user-name').innerText = user.displayName || user.email.split('@')[0];
+        
+        initQRScanner();
+        listenToActiveBorrows();
+      } else {
+        currentUser = null;
+        document.getElementById('view-unauth').classList.remove('hidden');
+        document.getElementById('view-authenticated').classList.add('hidden');
+        document.getElementById('user-profile-section').querySelector('#btn-login').classList.remove('hidden');
+        document.getElementById('user-info').classList.add('hidden');
+      }
+    });
+
+    // Global Handlers attached to Window (for HTML onclick handlers)
+    window.handleGoogleLogin = function() {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ hd: 'addu.edu.ph' });
+      signInWithPopup(auth, provider).catch(console.error);
+    };
+
+    window.handleLogout = function() {
+      signOut(auth);
+    };
+
+    window.switchTab = function(tabName) {
+      ['scan', 'borrows', 'return'].forEach(t => {
+        document.getElementById(`tab-content-${t}`).classList.add('hidden');
+        document.getElementById(`tab-btn-${t}`).className = "py-2 rounded-lg text-slate-400 hover:text-slate-200 transition";
+      });
+
+      document.getElementById(`tab-content-${tabName}`).classList.remove('hidden');
+      document.getElementById(`tab-btn-${tabName}`).className = "py-2 rounded-lg bg-blue-600 text-white font-semibold transition";
+    };
+
+    function initQRScanner() {
+      if (html5QrcodeScanner) return;
+      html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { 
+        fps: 10, 
+        qrbox: { width: 220, height: 220 }
+      });
+      html5QrcodeScanner.render((decodedText) => {
+        window.processAssetScan(decodedText);
+      }, () => {});
+    }
+
+    window.processAssetScan = function(tagCode) {
+      if (!tagCode) return;
+      document.getElementById('kit-title').innerText = `Equipment Tag: ${tagCode}`;
+      document.getElementById('modal-kit-checklist').classList.remove('hidden');
+    };
+
+    window.closeKitModal = function() {
+      document.getElementById('modal-kit-checklist').classList.add('hidden');
+    };
+
+    // Checklist Form Submit
+    document.getElementById('kit-checklist-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+
+      const tagCode = document.getElementById('kit-title').innerText.replace('Equipment Tag: ', '');
+
+      try {
+        await addDoc(collection(db, 'transactions'), {
+          userUid: currentUser.uid,
+          userEmail: currentUser.email,
+          userName: currentUser.displayName,
+          assetTag: tagCode,
+          checkoutTime: serverTimestamp(),
+          status: 'ACTIVE',
+          kitVerified: true,
+          offlineCreated: !navigator.onLine
+        });
+        alert(`Checkout success! Digital token created for ${tagCode}.`);
+        window.closeKitModal();
+        window.switchTab('borrows');
+      } catch (err) {
+        console.error("Checkout transaction error:", err);
+      }
+    });
+
+    // Real-Time Inventory Custody Listener
+    function listenToActiveBorrows() {
+      if (!currentUser) return;
+
+      const q = query(
+        collection(db, 'transactions'),
+        where('userUid', '==', currentUser.uid),
+        where('status', 'in', ['ACTIVE', 'PENDING_INSPECTION'])
+      );
+
+      onSnapshot(q, (snapshot) => {
+        const listContainer = document.getElementById('active-borrows-list');
+        listContainer.innerHTML = '';
+
+        if (snapshot.empty) {
+          listContainer.innerHTML = `
+            <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center text-xs text-slate-400">
+              No active tools checked out under your account.
+            </div>`;
+          return;
+        }
+
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const docId = docSnap.id;
+          const card = document.createElement('div');
+          card.className = "bg-slate-800 border border-slate-700 rounded-xl p-3 flex justify-between items-center";
+          
+          const isPending = data.status === 'PENDING_INSPECTION';
+          
+          card.innerHTML = `
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-mono text-xs font-bold text-blue-400">${data.assetTag}</span>
+                <span class="text-[10px] ${isPending ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'} font-semibold px-2 py-0.5 rounded-full uppercase">
+                  ${isPending ? 'Pending Inspection' : 'In Custody'}
+                </span>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">Receipt ID: ${docId.substring(0, 8)}...</p>
+            </div>
+            ${!isPending ? `
+              <button onclick="stageForExpressReturn('${docId}')" class="bg-slate-700 hover:bg-emerald-600 text-white text-[11px] px-3 py-1.5 rounded-lg transition font-medium">
+                Return
+              </button>
+            ` : ''}
+          `;
+          listContainer.appendChild(card);
+        });
+      });
+    }
+
+    window.stageForExpressReturn = async function(transactionId) {
+      try {
+        await updateDoc(doc(db, 'transactions', transactionId), {
+          status: 'PENDING_INSPECTION',
+          stagedReturnTime: serverTimestamp()
+        });
+        alert("Item status set to 'Pending Inspection'. Place tool in the express drop-box shelf.");
+      } catch (err) {
+        console.error("Return error:", err);
+      }
+    };
+  </script>
+</body>
+</html>

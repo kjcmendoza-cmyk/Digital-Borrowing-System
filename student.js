@@ -32,7 +32,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 1. OFFLINE PERSISTENCE (IndexedDB)
+// 1. OFFLINE PERSISTENCE
 enableIndexedDbPersistence(db).catch((err) => {
     console.warn('Firestore offline persistence warning:', err.code);
 });
@@ -45,11 +45,26 @@ const scannerControls = document.getElementById('scanner-controls');
 const accountLockedAlert = document.getElementById('account-locked-alert');
 const scannerStatus = document.getElementById('scanner-status');
 const toggleCameraBtn = document.getElementById('toggle-camera-btn');
+const torchBtn = document.getElementById('torch-btn');
 const feedbackCard = document.getElementById('feedback-card');
 const offlineBanner = document.getElementById('offline-banner');
 const activeCheckoutsList = document.getElementById('active-checkouts-list');
 
-// Modal Elements
+// Manual Entry Modal Elements
+const openManualBtn = document.getElementById('open-manual-btn');
+const manualModal = document.getElementById('manual-modal');
+const manualForm = document.getElementById('manual-form');
+const manualQrInput = document.getElementById('manual-qr-input');
+const closeManualModalBtn = document.getElementById('close-manual-modal-btn');
+const cancelManualBtn = document.getElementById('cancel-manual-btn');
+
+// History Modal Elements
+const openHistoryBtn = document.getElementById('open-history-btn');
+const historyModal = document.getElementById('history-modal');
+const historyList = document.getElementById('history-list');
+const closeHistoryModalBtn = document.getElementById('close-history-modal-btn');
+
+// Checklist Modal Elements
 const checklistModal = document.getElementById('checklist-modal');
 const modalAssetName = document.getElementById('modal-asset-name');
 const modalAssetQr = document.getElementById('modal-asset-qr');
@@ -61,6 +76,7 @@ const confirmCheckoutBtn = document.getElementById('confirm-checkout-btn');
 let currentUser = null;
 let html5QrCode = null;
 let isScanning = false;
+let isTorchOn = false;
 let currentScannedAsset = null;
 let isUserOnHold = false;
 
@@ -76,7 +92,7 @@ window.addEventListener('offline', handleConnectivityChange);
 window.addEventListener('online', handleConnectivityChange);
 handleConnectivityChange();
 
-// SECURITY GATE & REAL-TIME HOLD CHECK (Batch 6)
+// SECURITY GATE & REAL-TIME HOLD CHECK
 onAuthStateChanged(auth, async (user) => {
     if (!user || !user.email.endsWith('@addu.edu.ph')) {
         await signOut(auth);
@@ -87,24 +103,23 @@ onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     userEmailDisplay.textContent = user.email;
 
-    // Real-time listener for is_on_hold status
     onSnapshot(doc(db, "users", user.uid), (userSnap) => {
         if (userSnap.exists()) {
             const userData = userSnap.data();
             isUserOnHold = userData.is_on_hold || false;
 
             if (isUserOnHold) {
-                // ACCOUNT LOCKED: Hide scanner and display alert
                 accountLockedAlert.classList.remove('hidden');
                 scannerWrapper.classList.add('hidden');
                 scannerControls.classList.add('hidden');
+                openManualBtn.classList.add('hidden');
                 showFeedback("Account Locked", "Please return overdue items to clear your hold.", "red");
                 pauseScanner();
             } else {
-                // ACCOUNT ACTIVE: Show scanner
                 accountLockedAlert.classList.add('hidden');
                 scannerWrapper.classList.remove('hidden');
                 scannerControls.classList.remove('hidden');
+                openManualBtn.classList.remove('hidden');
                 if (!html5QrCode) {
                     initScanner();
                 } else if (!isScanning) {
@@ -119,7 +134,7 @@ onAuthStateChanged(auth, async (user) => {
 
 logoutBtn.addEventListener('click', () => signOut(auth).then(() => window.location.href = 'login.html'));
 
-// OPTIMISTIC ACTIVE CHECKOUTS LISTENER
+// ACTIVE CHECKOUTS & DUE TIMERS
 function listenToActiveCheckouts(uid) {
     const q = query(
         collection(db, "borrow_records"),
@@ -129,7 +144,7 @@ function listenToActiveCheckouts(uid) {
 
     onSnapshot(q, (snapshot) => {
         if (snapshot.empty) {
-            activeCheckoutsList.innerHTML = `<p class="text-xs text-gray-500 italic">No active borrowings.</p>`;
+            activeCheckoutsList.innerHTML = `<p class="text-xs text-slate-500 italic text-center py-2">No active borrowings.</p>`;
             return;
         }
 
@@ -137,18 +152,20 @@ function listenToActiveCheckouts(uid) {
         snapshot.forEach((docSnap) => {
             const record = docSnap.data();
             const isPendingSync = snapshot.metadata.hasPendingWrites || docSnap.metadata.hasPendingWrites;
+            const dueStatusHtml = calculateDueHtml(record.borrowed_at);
 
             const card = document.createElement('div');
-            card.className = "bg-gray-800 border border-gray-700 rounded-xl p-3 flex justify-between items-center text-xs";
+            card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-3 flex justify-between items-center text-xs shadow-md";
             card.innerHTML = `
                 <div>
-                    <p class="font-bold text-white">${escapeHtml(record.asset_name)}</p>
-                    <p class="text-gray-400 font-mono text-[10px]">${escapeHtml(record.qr_code_str)}</p>
+                    <p class="font-bold text-white text-sm">${escapeHtml(record.asset_name)}</p>
+                    <p class="text-slate-400 font-mono text-[10px]">${escapeHtml(record.qr_code_str)}</p>
+                    <div class="mt-1">${dueStatusHtml}</div>
                 </div>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${
                     isPendingSync 
                         ? 'bg-amber-900/60 text-amber-300 border border-amber-700/50 animate-pulse' 
-                        : 'bg-green-900/60 text-green-300 border border-green-700/50'
+                        : 'bg-emerald-950 text-emerald-400 border border-emerald-800/80'
                 }">
                     ${isPendingSync ? 'Queued (Offline)' : 'Checked Out'}
                 </span>
@@ -158,7 +175,41 @@ function listenToActiveCheckouts(uid) {
     });
 }
 
-// SCANNER UI
+function calculateDueHtml(borrowedAt) {
+    if (!borrowedAt) return `<span class="text-slate-500 text-[11px]">Due Today</span>`;
+    const borrowedTime = borrowedAt.toDate ? borrowedAt.toDate() : new Date(borrowedAt);
+    const dueTime = new Date(borrowedTime.getTime() + (4 * 60 * 60 * 1000)); // Standard 4-hour loan
+    const now = new Date();
+
+    const formattedTime = dueTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    if (now > dueTime) {
+        return `<span class="text-rose-400 font-bold text-[11px] flex items-center gap-1">⚠️ OVERDUE (Was due ${formattedTime})</span>`;
+    }
+    return `<span class="text-slate-400 text-[11px]">🕒 Due by ${formattedTime}</span>`;
+}
+
+// SCANNER CONTROLLERS
+function pauseScanner() {
+    if (html5QrCode && isScanning) {
+        try {
+            html5QrCode.pause(true);
+        } catch (e) {
+            console.warn("Pause scanner warning:", e);
+        }
+    }
+}
+
+function resumeScanner() {
+    if (html5QrCode && !isUserOnHold) {
+        try {
+            html5QrCode.resume();
+        } catch (e) {
+            console.warn("Resume scanner warning:", e);
+        }
+    }
+}
+
 function initScanner() {
     if (isUserOnHold) return;
 
@@ -180,24 +231,22 @@ function initScanner() {
 }
 
 async function onScanSuccess(decodedText) {
-    if (!isScanning || isUserOnHold) return;
+    if (isUserOnHold) return;
 
     pauseScanner();
     const scannedCode = decodedText.trim();
 
-    // RETURN SHELF DROP-OFF
     if (scannedCode === 'RETURN_SHELF' || scannedCode === 'EE-RETURN-SHELF') {
         await handleReturnShelfDropOff();
         return;
     }
 
-    // REGULAR ASSET BORROW
     try {
         const q = query(collection(db, "assets"), where("qr_code_str", "==", scannedCode));
         const querySnap = await getDocs(q);
 
         if (querySnap.empty) {
-            showFeedback("Unrecognized Asset", `No asset found matching string "${scannedCode}".`, "red");
+            showFeedback("Unrecognized Asset", `No asset found matching "${scannedCode}".`, "red");
             setTimeout(resumeScanner, 3000);
             return;
         }
@@ -243,8 +292,11 @@ async function handleReturnShelfDropOff() {
                 const recordRef = doc(db, "borrow_records", docSnap.id);
                 const assetRef = doc(db, "assets", record.asset_id);
 
-                transaction.update(recordRef, { status: 'STAGED', staged_at: serverTimestamp() });
-                transaction.update(assetRef, { status: 'PENDING_INSPECTION', updated_at: serverTimestamp() });
+                const assetSnap = await transaction.get(assetRef);
+                if (assetSnap.exists()) {
+                    transaction.update(recordRef, { status: 'STAGED', staged_at: serverTimestamp() });
+                    transaction.update(assetRef, { status: 'PENDING_INSPECTION', updated_at: serverTimestamp() });
+                }
             }
         });
 
@@ -257,6 +309,7 @@ async function handleReturnShelfDropOff() {
     }
 }
 
+// CHECKLIST MODAL CONTROLLERS
 function openChecklistModal(asset) {
     modalAssetName.textContent = asset.name;
     modalAssetQr.textContent = `QR: ${asset.qr_code_str}`;
@@ -329,8 +382,120 @@ async function executeCheckoutTransaction(assetId) {
     });
 }
 
-// HARDWARE CAMERA STREAM CONTROL (STOP & START)
+// MANUAL QR CODE MODAL HANDLERS
+openManualBtn.addEventListener('click', () => {
+    pauseScanner();
+    manualQrInput.value = '';
+    manualModal.classList.remove('hidden');
+});
 
+const closeManualModal = () => {
+    manualModal.classList.add('hidden');
+    resumeScanner();
+};
+
+closeManualModalBtn.addEventListener('click', closeManualModal);
+cancelManualBtn.addEventListener('click', closeManualModal);
+
+manualForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const val = manualQrInput.value.trim();
+    if (!val) return;
+    manualModal.classList.add('hidden');
+    await onScanSuccess(val);
+});
+
+// TORCH / FLASHLIGHT CONTROLLER
+torchBtn.addEventListener('click', async () => {
+    if (!html5QrCode || !isScanning) {
+        alert("Camera is not active.");
+        return;
+    }
+
+    try {
+        const videoElem = document.querySelector('#qr-reader video');
+        if (videoElem && videoElem.srcObject) {
+            const track = videoElem.srcObject.getVideoTracks()[0];
+            if (track && track.getCapabilities && track.getCapabilities().torch) {
+                isTorchOn = !isTorchOn;
+                await track.applyConstraints({ advanced: [{ torch: isTorchOn }] });
+                torchBtn.classList.toggle('bg-amber-500/40', isTorchOn);
+            } else {
+                alert("Flashlight is not supported on this camera/device.");
+            }
+        }
+    } catch (err) {
+        console.warn("Torch toggle error:", err);
+        alert("Could not activate camera torch.");
+    }
+});
+
+// BORROWING HISTORY LOG MODAL
+openHistoryBtn.addEventListener('click', async () => {
+    historyModal.classList.remove('hidden');
+    historyList.innerHTML = `<p class="text-xs text-slate-500 italic text-center py-4">Loading borrowing history...</p>`;
+
+    try {
+        const q = query(
+            collection(db, "borrow_records"),
+            where("student_uid", "==", currentUser.uid)
+        );
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+            historyList.innerHTML = `<p class="text-xs text-slate-500 italic text-center py-4">No past borrowing history found.</p>`;
+            return;
+        }
+
+        const records = [];
+        snap.forEach(d => records.push({ id: d.id, ...d.data() }));
+
+        // Filter and sort locally to avoid composite index requirements
+        const pastRecords = records
+            .filter(r => r.status !== 'BORROWED')
+            .sort((a, b) => (b.borrowed_at || 0) - (a.borrowed_at || 0));
+
+        if (pastRecords.length === 0) {
+            historyList.innerHTML = `<p class="text-xs text-slate-500 italic text-center py-4">No past returned records found.</p>`;
+            return;
+        }
+
+        historyList.innerHTML = '';
+        pastRecords.forEach(rec => {
+            const dateStr = rec.borrowed_at?.toDate ? rec.borrowed_at.toDate().toLocaleDateString() : 'Recent';
+            let badgeHtml = '';
+
+            if (rec.status === 'STAGED') {
+                badgeHtml = `<span class="bg-amber-900/60 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-700/50">Staged Return</span>`;
+            } else if (rec.status === 'RETURNED' && rec.condition === 'GOOD') {
+                badgeHtml = `<span class="bg-emerald-950 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-800">Returned (Good)</span>`;
+            } else if (rec.condition === 'DAMAGED') {
+                badgeHtml = `<span class="bg-rose-950 text-rose-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-rose-800">Returned (Damaged)</span>`;
+            } else {
+                badgeHtml = `<span class="bg-slate-800 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded-full">${escapeHtml(rec.status)}</span>`;
+            }
+
+            const item = document.createElement('div');
+            item.className = "bg-slate-950 border border-slate-800 rounded-2xl p-3 flex justify-between items-center text-xs";
+            item.innerHTML = `
+                <div>
+                    <p class="font-bold text-slate-200">${escapeHtml(rec.asset_name)}</p>
+                    <p class="text-[10px] text-slate-500 font-mono">${escapeHtml(rec.qr_code_str)} • ${dateStr}</p>
+                </div>
+                <div>${badgeHtml}</div>
+            `;
+            historyList.appendChild(item);
+        });
+
+    } catch (err) {
+        console.error("History fetch error:", err);
+        historyList.innerHTML = `<p class="text-xs text-rose-400 text-center py-4">Failed to load history.</p>`;
+    }
+});
+
+closeHistoryModalBtn.addEventListener('click', () => historyModal.classList.add('hidden'));
+
+// CAMERA HARDWARE CONTROLS
 async function startCamera() {
     if (isUserOnHold) return;
 
@@ -338,7 +503,6 @@ async function startCamera() {
         html5QrCode = new Html5Qrcode("qr-reader");
     }
 
-    // Check if camera is stopped (State 1 = NOT_STARTED)
     if (!isScanning) {
         const config = { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 };
         try {
@@ -354,7 +518,7 @@ async function startCamera() {
         } catch (err) {
             console.error("Camera Hardware Start Error:", err);
             updateScannerStatus(false, "Camera Off");
-            showFeedback("Camera Access Error", "Please allow camera permissions in your browser settings.", "red");
+            showFeedback("Camera Access Error", "Please allow camera permissions in browser settings.", "red");
         }
     }
 }
@@ -362,7 +526,6 @@ async function startCamera() {
 async function stopCamera() {
     if (html5QrCode && isScanning) {
         try {
-            // .stop() completely turns off the device camera stream
             await html5QrCode.stop();
             isScanning = false;
             updateScannerStatus(false, "Camera Off");
@@ -374,20 +537,16 @@ async function stopCamera() {
     }
 }
 
-// TOGGLE BUTTON CLICK HANDLER
 toggleCameraBtn.addEventListener('click', async () => {
-    toggleCameraBtn.disabled = true; // Lock button while hardware initializes
-    
+    toggleCameraBtn.disabled = true;
     if (isScanning) {
         await stopCamera();
     } else {
         await startCamera();
     }
-    
     toggleCameraBtn.disabled = false;
 });
 
-// SCANNER STATUS & STANDBY OVERLAY CONTROLLER
 function updateScannerStatus(active, label) {
     scannerStatus.textContent = label;
     const statusDot = document.getElementById('status-ping');

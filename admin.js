@@ -39,7 +39,9 @@ const userEmailSpan = document.getElementById('user-email');
 const logoutBtn = document.getElementById('logout-btn');
 const assetsTbody = document.getElementById('assets-tbody');
 const inspectionsTbody = document.getElementById('inspections-tbody');
+const maintenanceTbody = document.getElementById('maintenance-tbody');
 const pendingCountBadge = document.getElementById('pending-count-badge');
+const exportCsvBtn = document.getElementById('export-csv-btn');
 
 // User Hold Search Elements
 const userSearchForm = document.getElementById('user-search-form');
@@ -52,13 +54,20 @@ const toggleHoldBtn = document.getElementById('toggle-hold-btn');
 const userSearchMsg = document.getElementById('user-search-msg');
 
 let currentFoundUser = null;
+let currentInspectingRecord = null;
 
-// Modal Elements
+// Asset Modal Elements
 const assetModal = document.getElementById('asset-modal');
 const assetForm = document.getElementById('asset-form');
 const modalTitle = document.getElementById('modal-title');
 const openAddModalBtn = document.getElementById('open-add-modal-btn');
 const closeAssetModalBtn = document.getElementById('close-asset-modal-btn');
+
+// Damage Modal Elements
+const damageModal = document.getElementById('damage-modal');
+const damageForm = document.getElementById('damage-form');
+const damageNotes = document.getElementById('damage-notes');
+const cancelDamageBtn = document.getElementById('cancel-damage-btn');
 
 // QR Modal Elements
 const qrModal = document.getElementById('qr-modal');
@@ -168,6 +177,7 @@ async function toggleUserHoldStatus(uid, newHoldState) {
 function initAdminDashboard() {
     listenToAssets();
     listenToPendingInspections();
+    listenToMaintenanceQueue();
     listenToStudentDirectory();
     listenToHoldCount();
 }
@@ -263,15 +273,63 @@ function listenToPendingInspections() {
                 </td>
             `;
 
-            tr.querySelector('.grade-good-btn').addEventListener('click', () => gradeReturn(recordId, record.asset_id, 'GOOD'));
-            tr.querySelector('.grade-damaged-btn').addEventListener('click', () => gradeReturn(recordId, record.asset_id, 'DAMAGED'));
+            tr.querySelector('.grade-good-btn').addEventListener('click', () => gradeReturnGood(recordId, record.asset_id));
+            tr.querySelector('.grade-damaged-btn').addEventListener('click', () => openDamageModal(recordId, record.asset_id));
 
             inspectionsTbody.appendChild(tr);
         });
     });
 }
 
-// REAL-TIME HOLD COUNT FOR METRICS CARD
+// REAL-TIME MAINTENANCE QUEUE LISTENER
+function listenToMaintenanceQueue() {
+    const q = query(collection(db, "assets"), where("status", "==", "Maintenance"));
+
+    onSnapshot(q, (snapshot) => {
+        if (!maintenanceTbody) return;
+
+        if (snapshot.empty) {
+            maintenanceTbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400">No assets currently in maintenance.</td></tr>`;
+            return;
+        }
+
+        maintenanceTbody.innerHTML = '';
+        snapshot.forEach((docSnap) => {
+            const asset = docSnap.data();
+            const assetId = docSnap.id;
+
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-rose-50/50 transition";
+            tr.innerHTML = `
+                <td class="p-3 font-semibold text-gray-900">${escapeHtml(asset.name)}</td>
+                <td class="p-3"><span class="bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-full">${escapeHtml(asset.type)}</span></td>
+                <td class="p-3 font-mono text-xs text-gray-600">${escapeHtml(asset.location_id)}</td>
+                <td class="p-3 font-mono text-xs text-blue-600">${escapeHtml(asset.qr_code_str)}</td>
+                <td class="p-3 text-center">
+                    <button class="resolve-maint-btn bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer">
+                        ✓ Mark Repaired
+                    </button>
+                </td>
+            `;
+
+            tr.querySelector('.resolve-maint-btn').addEventListener('click', () => resolveMaintenance(assetId));
+            maintenanceTbody.appendChild(tr);
+        });
+    });
+}
+
+async function resolveMaintenance(assetId) {
+    try {
+        await updateDoc(doc(db, "assets", assetId), {
+            status: 'Available',
+            updated_at: serverTimestamp()
+        });
+    } catch (err) {
+        alert("Failed to mark repaired: " + err.message);
+    }
+}
+
+// REAL-TIME HOLD COUNT
 function listenToHoldCount() {
     const q = query(collection(db, "users"), where("is_on_hold", "==", true));
     onSnapshot(q, (snapshot) => {
@@ -354,24 +412,95 @@ function listenToStudentDirectory() {
     }
 }
 
-async function gradeReturn(recordId, assetId, condition) {
+// GRADE RETURN LOGIC
+async function gradeReturnGood(recordId, assetId) {
     try {
         await runTransaction(db, async (transaction) => {
             const recordRef = doc(db, "borrow_records", recordId);
             const assetRef = doc(db, "assets", assetId);
 
-            if (condition === 'GOOD') {
-                transaction.update(recordRef, { status: 'RETURNED', returned_at: serverTimestamp(), condition: 'GOOD' });
-                transaction.update(assetRef, { status: 'Available', updated_at: serverTimestamp() });
-            } else if (condition === 'DAMAGED') {
-                transaction.update(recordRef, { status: 'RETURNED_DAMAGED', returned_at: serverTimestamp(), condition: 'DAMAGED' });
-                transaction.update(assetRef, { status: 'Maintenance', updated_at: serverTimestamp() });
-            }
+            transaction.update(recordRef, { status: 'RETURNED', returned_at: serverTimestamp(), condition: 'GOOD' });
+            transaction.update(assetRef, { status: 'Available', updated_at: serverTimestamp() });
         });
     } catch (error) {
         alert("Failed to grade return: " + error.message);
     }
 }
+
+function openDamageModal(recordId, assetId) {
+    currentInspectingRecord = { recordId, assetId };
+    damageNotes.value = '';
+    damageModal.classList.remove('hidden');
+}
+
+cancelDamageBtn.addEventListener('click', () => {
+    damageModal.classList.add('hidden');
+    currentInspectingRecord = null;
+});
+
+damageForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentInspectingRecord) return;
+
+    const notes = damageNotes.value.trim();
+    const { recordId, assetId } = currentInspectingRecord;
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const recordRef = doc(db, "borrow_records", recordId);
+            const assetRef = doc(db, "assets", assetId);
+
+            transaction.update(recordRef, { 
+                status: 'RETURNED_DAMAGED', 
+                returned_at: serverTimestamp(), 
+                condition: 'DAMAGED',
+                damage_notes: notes 
+            });
+            transaction.update(assetRef, { status: 'Maintenance', updated_at: serverTimestamp() });
+        });
+
+        damageModal.classList.add('hidden');
+        currentInspectingRecord = null;
+    } catch (error) {
+        alert("Failed to record damage: " + error.message);
+    }
+});
+
+// CSV INVENTORY AUDIT EXPORT
+exportCsvBtn.addEventListener('click', async () => {
+    try {
+        const snap = await getDocs(collection(db, "assets"));
+        if (snap.empty) {
+            alert("No inventory assets to export.");
+            return;
+        }
+
+        let csv = "Asset Name,Type,Status,Location ID,Quantity,QR Code String\n";
+        snap.forEach(docSnap => {
+            const a = docSnap.data();
+            const name = `"${(a.name || '').replace(/"/g, '""')}"`;
+            const type = `"${(a.type || '').replace(/"/g, '""')}"`;
+            const status = `"${(a.status || '').replace(/"/g, '""')}"`;
+            const loc = `"${(a.location_id || '').replace(/"/g, '""')}"`;
+            const qty = a.quantity || 1;
+            const qr = `"${(a.qr_code_str || '').replace(/"/g, '""')}"`;
+
+            csv += `${name},${type},${status},${loc},${qty},${qr}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `EE_Lab_Inventory_Audit_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+    } catch (err) {
+        alert("Failed to export CSV: " + err.message);
+    }
+});
 
 // ASSET CRUD
 async function addAsset(assetData) { await addDoc(collection(db, "assets"), assetData); }

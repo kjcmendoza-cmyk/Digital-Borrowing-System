@@ -47,9 +47,15 @@
                 <h2 class="text-2xl font-bold text-gray-900">Inventory Dashboard</h2>
                 <p class="text-sm text-gray-500">Manage equipment, inspect staged returns, and manage user hold status.</p>
             </div>
-            <button id="open-add-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer">
-                <span>+</span> Add New Asset
-            </button>
+            <div class="flex items-center gap-3">
+                <button id="export-csv-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span>Export CSV</span>
+                </button>
+                <button id="open-add-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer text-sm">
+                    <span>+</span> Add New Asset
+                </button>
+            </div>
         </div>
 
         <!-- 1. DASHBOARD KPI METRICS CARDS -->
@@ -127,7 +133,7 @@
             </div>
         </div>
 
-        <!-- ADMIN INSPECTION SECTION (Pending Staged Returns) -->
+        <!-- 4. ADMIN INSPECTION SECTION (Pending Staged Returns) -->
         <div class="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-xs">
             <div class="flex items-center justify-between mb-4">
                 <div>
@@ -161,7 +167,40 @@
             </div>
         </div>
 
-        <!-- Inventory Real-Time Table -->
+        <!-- 5. MAINTENANCE QUEUE SECTION -->
+        <div class="mb-8 bg-rose-50 border border-rose-200 rounded-2xl p-6 shadow-xs">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-rose-900 flex items-center gap-2">
+                        <span>🛠️</span> Maintenance & Repair Queue
+                    </h3>
+                    <p class="text-xs text-rose-700">Damaged equipment needing repair before returning to active inventory.</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-xs overflow-hidden border border-rose-100">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-rose-100/50 text-xs font-semibold uppercase text-rose-800 tracking-wider">
+                            <tr>
+                                <th class="p-3">Asset Name</th>
+                                <th class="p-3">Type</th>
+                                <th class="p-3">Location</th>
+                                <th class="p-3">QR String</th>
+                                <th class="p-3 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="maintenance-tbody" class="divide-y divide-rose-100 text-sm">
+                            <tr>
+                                <td colspan="5" class="p-4 text-center text-gray-400">No assets currently in maintenance.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. ALL INVENTORY ASSETS TABLE -->
         <div class="bg-white rounded-2xl shadow overflow-hidden">
             <div class="p-4 border-b border-gray-100 font-bold text-gray-800">
                 All Inventory Assets
@@ -262,6 +301,29 @@
                     Print QR
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Damage Notes Modal -->
+    <div id="damage-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden z-50 no-print">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
+            <div class="border-b border-gray-100 pb-3">
+                <h3 class="text-lg font-bold text-rose-900 flex items-center gap-2">
+                    <span>⚠</span> Log Physical Damage
+                </h3>
+                <p class="text-xs text-gray-500">Provide details regarding the damaged item before flagging for repair.</p>
+            </div>
+            <form id="damage-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Damage Description & Custodial Notes</label>
+                    <textarea id="damage-notes" required rows="3" placeholder="e.g. Channel 1 probe missing, casing cracked on top right corner."
+                              class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-rose-500 outline-none"></textarea>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" id="cancel-damage-btn" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl cursor-pointer">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-sm bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl cursor-pointer">Flag as Damaged</button>
+                </div>
+            </form>
         </div>
     </div>
 

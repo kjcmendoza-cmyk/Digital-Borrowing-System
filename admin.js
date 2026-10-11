@@ -133,14 +133,14 @@ function renderUserSearchCard(user) {
         searchedUserHoldBadge.className = "text-xs font-bold px-3 py-1 rounded-full bg-red-100 text-red-800";
         
         toggleHoldBtn.textContent = "Clear Hold & Unlock";
-        toggleHoldBtn.className = "text-xs font-semibold px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white shadow-xs transition";
+        toggleHoldBtn.className = "text-xs font-semibold px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white shadow-xs transition cursor-pointer";
         toggleHoldBtn.onclick = () => toggleUserHoldStatus(user.id, false);
     } else {
         searchedUserHoldBadge.textContent = "ACCOUNT CLEAR (ACTIVE)";
         searchedUserHoldBadge.className = "text-xs font-bold px-3 py-1 rounded-full bg-green-100 text-green-800";
         
         toggleHoldBtn.textContent = "Place Account On Hold";
-        toggleHoldBtn.className = "text-xs font-semibold px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-xs transition";
+        toggleHoldBtn.className = "text-xs font-semibold px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-xs transition cursor-pointer";
         toggleHoldBtn.onclick = () => toggleUserHoldStatus(user.id, true);
     }
 
@@ -154,8 +154,10 @@ async function toggleUserHoldStatus(uid, newHoldState) {
             updated_at: serverTimestamp()
         });
 
-        currentFoundUser.is_on_hold = newHoldState;
-        renderUserSearchCard(currentFoundUser);
+        if (currentFoundUser && currentFoundUser.id === uid) {
+            currentFoundUser.is_on_hold = newHoldState;
+            renderUserSearchCard(currentFoundUser);
+        }
     } catch (error) {
         console.error("Toggle hold error:", error);
         alert("Failed to update user hold status: " + error.message);
@@ -166,10 +168,29 @@ async function toggleUserHoldStatus(uid, newHoldState) {
 function initAdminDashboard() {
     listenToAssets();
     listenToPendingInspections();
+    listenToStudentDirectory();
+    listenToHoldCount();
 }
 
 function listenToAssets() {
     onSnapshot(collection(db, "assets"), (snapshot) => {
+        let totalQty = 0;
+        let inUseQty = 0;
+
+        snapshot.forEach(docSnap => {
+            const asset = docSnap.data();
+            const qty = asset.quantity || 1;
+            totalQty += qty;
+            if (asset.status === 'IN_USE') {
+                inUseQty += qty;
+            }
+        });
+
+        const totalElem = document.getElementById('metric-total-assets');
+        const inUseElem = document.getElementById('metric-in-use');
+        if (totalElem) totalElem.textContent = totalQty;
+        if (inUseElem) inUseElem.textContent = inUseQty;
+
         if (snapshot.empty) {
             assetsTbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-gray-400">No assets registered yet.</td></tr>`;
             return;
@@ -192,9 +213,9 @@ function listenToAssets() {
                 <td class="p-4 font-mono text-xs text-blue-600">${escapeHtml(asset.qr_code_str)}</td>
                 <td class="p-4 text-center">
                     <div class="flex items-center justify-center gap-2">
-                        <button class="qr-btn bg-purple-50 hover:bg-purple-100 text-purple-700 p-2 rounded-lg text-xs font-medium transition">QR</button>
-                        <button class="edit-btn bg-blue-50 hover:bg-blue-100 text-blue-700 p-2 rounded-lg text-xs font-medium transition">Edit</button>
-                        <button class="delete-btn bg-red-50 hover:bg-red-100 text-red-700 p-2 rounded-lg text-xs font-medium transition">Delete</button>
+                        <button class="qr-btn bg-purple-50 hover:bg-purple-100 text-purple-700 p-2 rounded-lg text-xs font-medium transition cursor-pointer">QR</button>
+                        <button class="edit-btn bg-blue-50 hover:bg-blue-100 text-blue-700 p-2 rounded-lg text-xs font-medium transition cursor-pointer">Edit</button>
+                        <button class="delete-btn bg-red-50 hover:bg-red-100 text-red-700 p-2 rounded-lg text-xs font-medium transition cursor-pointer">Delete</button>
                     </div>
                 </td>
             `;
@@ -215,6 +236,9 @@ function listenToPendingInspections() {
         if (!inspectionsTbody) return;
         pendingCountBadge.textContent = `${snapshot.size} Pending`;
 
+        const pendingMetric = document.getElementById('metric-pending-returns');
+        if (pendingMetric) pendingMetric.textContent = snapshot.size;
+
         if (snapshot.empty) {
             inspectionsTbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400">No items currently awaiting inspection.</td></tr>`;
             return;
@@ -233,8 +257,8 @@ function listenToPendingInspections() {
                 <td class="p-3 text-blue-600 font-mono text-xs">${escapeHtml(record.qr_code_str)}</td>
                 <td class="p-3 text-center">
                     <div class="flex items-center justify-center gap-2">
-                        <button class="grade-good-btn bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-xs transition">✓ Good</button>
-                        <button class="grade-damaged-btn bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-xs transition">⚠ Damaged</button>
+                        <button class="grade-good-btn bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer">✓ Good</button>
+                        <button class="grade-damaged-btn bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer">⚠ Damaged</button>
                     </div>
                 </td>
             `;
@@ -245,6 +269,89 @@ function listenToPendingInspections() {
             inspectionsTbody.appendChild(tr);
         });
     });
+}
+
+// REAL-TIME HOLD COUNT FOR METRICS CARD
+function listenToHoldCount() {
+    const q = query(collection(db, "users"), where("is_on_hold", "==", true));
+    onSnapshot(q, (snapshot) => {
+        const holdMetric = document.getElementById('metric-on-hold');
+        if (holdMetric) {
+            holdMetric.textContent = snapshot.size;
+        }
+    });
+}
+
+// REAL-TIME STUDENT ROSTER & FILTER
+function listenToStudentDirectory() {
+    const studentsTbody = document.getElementById('students-tbody');
+    const filterInput = document.getElementById('student-filter-input');
+    if (!studentsTbody) return;
+
+    let allStudents = [];
+
+    onSnapshot(collection(db, "users"), (snapshot) => {
+        allStudents = [];
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (data.role !== 'admin') {
+                allStudents.push({ id: docSnap.id, ...data });
+            }
+        });
+        renderStudentTable(allStudents);
+    });
+
+    if (filterInput) {
+        filterInput.addEventListener('input', (e) => {
+            const queryStr = e.target.value.toLowerCase();
+            const filtered = allStudents.filter(s => 
+                (s.name && s.name.toLowerCase().includes(queryStr)) ||
+                (s.id_number && s.id_number.toLowerCase().includes(queryStr)) ||
+                (s.email && s.email.toLowerCase().includes(queryStr)) ||
+                (s.course && s.course.toLowerCase().includes(queryStr))
+            );
+            renderStudentTable(filtered);
+        });
+    }
+
+    function renderStudentTable(students) {
+        if (students.length === 0) {
+            studentsTbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">No student accounts found.</td></tr>`;
+            return;
+        }
+
+        studentsTbody.innerHTML = '';
+        students.forEach((student) => {
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-gray-50 transition";
+            tr.innerHTML = `
+                <td class="p-3 font-semibold text-gray-900">${escapeHtml(student.name || 'N/A')}</td>
+                <td class="p-3 font-mono text-xs text-gray-600">${escapeHtml(student.id_number || 'N/A')}</td>
+                <td class="p-3 text-xs text-gray-600">${escapeHtml(student.course || 'N/A')}</td>
+                <td class="p-3 font-mono text-xs text-blue-600">${escapeHtml(student.email)}</td>
+                <td class="p-3">
+                    ${student.is_on_hold 
+                        ? `<span class="bg-red-100 text-red-800 text-xs px-2.5 py-1 rounded-full font-bold">LOCKED</span>` 
+                        : `<span class="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full font-medium">ACTIVE</span>`}
+                </td>
+                <td class="p-3 text-center">
+                    <button class="toggle-hold-btn text-xs font-semibold px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                        student.is_on_hold 
+                            ? 'bg-green-600 hover:bg-green-700 text-white' 
+                            : 'bg-red-50 hover:bg-red-100 text-red-600'
+                    }">
+                        ${student.is_on_hold ? 'Clear Hold' : 'Place Hold'}
+                    </button>
+                </td>
+            `;
+
+            tr.querySelector('.toggle-hold-btn').addEventListener('click', () => {
+                toggleUserHoldStatus(student.id, !student.is_on_hold);
+            });
+
+            studentsTbody.appendChild(tr);
+        });
+    }
 }
 
 async function gradeReturn(recordId, assetId, condition) {

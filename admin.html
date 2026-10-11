@@ -25,12 +25,16 @@
 </head>
 <body class="bg-gray-100 min-h-screen text-gray-800 flex flex-col">
 
-    <!-- Header Navigation -->
+    <!-- Header Navigation with Logo -->
     <header class="bg-blue-900 text-white shadow-md p-4 flex justify-between items-center no-print">
-        <h1 class="text-xl font-bold tracking-wide">EE Lab Admin</h1>
+        <div class="flex items-center gap-3">
+            <img src="fusee-logo.png" alt="FUSEE Logo" class="h-9 w-auto object-contain shrink-0 filter drop-shadow-xs"
+                 onerror="if (this.src.endsWith('fusee-logo.png')) { this.src='fusee-logo.PNG'; } else if (this.src.endsWith('fusee-logo.PNG')) { this.src='FUSEE-logo.png'; } else { this.style.display='none'; }">
+            <h1 class="text-xl font-bold tracking-wide">EE Laboratory Admin</h1>
+        </div>
         <div class="flex items-center gap-4">
             <span id="user-email" class="text-sm text-blue-200 hidden sm:inline"></span>
-            <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1.5 rounded-lg transition">Logout</button>
+            <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1.5 rounded-lg transition cursor-pointer">Logout</button>
         </div>
     </header>
 
@@ -43,19 +47,39 @@
                 <h2 class="text-2xl font-bold text-gray-900">Inventory Dashboard</h2>
                 <p class="text-sm text-gray-500">Manage equipment, inspect staged returns, and manage user hold status.</p>
             </div>
-            <button id="open-add-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-xl shadow transition flex items-center gap-2">
+            <button id="open-add-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer">
                 <span>+</span> Add New Asset
             </button>
         </div>
 
-        <!-- 3. ADMIN USER MANAGEMENT & CLEAR HOLD SECTION -->
+        <!-- 1. DASHBOARD KPI METRICS CARDS -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Assets</p>
+                <p id="metric-total-assets" class="text-2xl font-extrabold text-gray-900 mt-1">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-blue-200 bg-blue-50/30 shadow-xs">
+                <p class="text-xs font-semibold text-blue-600 uppercase tracking-wider">Currently In Use</p>
+                <p id="metric-in-use" class="text-2xl font-extrabold text-blue-600 mt-1">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-amber-200 bg-amber-50/30 shadow-xs">
+                <p class="text-xs font-semibold text-amber-700 uppercase tracking-wider">Pending Returns</p>
+                <p id="metric-pending-returns" class="text-2xl font-extrabold text-amber-700 mt-1">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-red-200 bg-red-50/30 shadow-xs">
+                <p class="text-xs font-semibold text-red-600 uppercase tracking-wider">Accounts On Hold</p>
+                <p id="metric-on-hold" class="text-2xl font-extrabold text-red-600 mt-1">0</p>
+            </div>
+        </div>
+
+        <!-- 2. QUICK USER HOLD SEARCH -->
         <div class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
-            <h3 class="text-lg font-bold text-gray-900 mb-1">User Management & Hold Clearance</h3>
+            <h3 class="text-lg font-bold text-gray-900 mb-1">Quick User Hold Search</h3>
             <p class="text-xs text-gray-500 mb-4">Search for a student by email to inspect or unlock their borrowing account status.</p>
 
             <form id="user-search-form" class="flex gap-3 mb-4">
                 <input type="email" id="user-search-email" placeholder="student@addu.edu.ph" required class="flex-1 border border-gray-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-xl shadow-xs transition">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-xl shadow-xs transition cursor-pointer">
                     Search User
                 </button>
             </form>
@@ -67,10 +91,40 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <span id="searched-user-hold-badge" class="text-xs font-bold px-3 py-1 rounded-full"></span>
-                    <button id="toggle-hold-btn" class="text-xs font-semibold px-4 py-2 rounded-xl shadow-xs transition"></button>
+                    <button id="toggle-hold-btn" class="text-xs font-semibold px-4 py-2 rounded-xl shadow-xs transition cursor-pointer"></button>
                 </div>
             </div>
             <p id="user-search-msg" class="text-xs text-red-500 hidden mt-2"></p>
+        </div>
+
+        <!-- 3. FULL STUDENT ROSTER & DIRECTORY -->
+        <div class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Student Roster & Directory</h3>
+                    <p class="text-xs text-gray-500">Live directory of all registered student borrowing accounts.</p>
+                </div>
+                <input type="text" id="student-filter-input" placeholder="Filter name, ID, or course..." 
+                       class="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-64">
+            </div>
+
+            <div class="overflow-x-auto border border-gray-100 rounded-xl">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold uppercase text-gray-500">
+                        <tr>
+                            <th class="p-3">Student Name</th>
+                            <th class="p-3">ID Number</th>
+                            <th class="p-3">Course</th>
+                            <th class="p-3">AdDU Email</th>
+                            <th class="p-3">Status</th>
+                            <th class="p-3 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="students-tbody" class="divide-y divide-gray-100 text-sm">
+                        <tr><td colspan="6" class="p-4 text-center text-gray-400">Loading student directory...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <!-- ADMIN INSPECTION SECTION (Pending Staged Returns) -->
@@ -186,8 +240,8 @@
                 </div>
 
                 <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                    <button type="button" id="close-asset-modal-btn" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl">Cancel</button>
-                    <button type="submit" class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl">Save Asset</button>
+                    <button type="button" id="close-asset-modal-btn" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl cursor-pointer">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl cursor-pointer">Save Asset</button>
                 </div>
             </form>
         </div>
@@ -203,8 +257,8 @@
             </div>
 
             <div class="flex justify-center gap-3 pt-4 border-t border-gray-100 no-print">
-                <button type="button" id="close-qr-modal-btn" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl">Close</button>
-                <button type="button" id="print-qr-btn" class="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl flex items-center gap-2">
+                <button type="button" id="close-qr-modal-btn" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl cursor-pointer">Close</button>
+                <button type="button" id="print-qr-btn" class="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl flex items-center gap-2 cursor-pointer">
                     Print QR
                 </button>
             </div>

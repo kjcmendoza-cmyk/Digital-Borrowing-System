@@ -329,84 +329,81 @@ async function executeCheckoutTransaction(assetId) {
     });
 }
 
-// SAFE CAMERA TOGGLE & STATUS LOGIC
-toggleCameraBtn.addEventListener('click', async () => {
+// HARDWARE CAMERA STREAM CONTROL (STOP & START)
+
+async function startCamera() {
     if (isUserOnHold) return;
 
-    try {
-        if (isScanning) {
-            // Check state before pausing (2 = SCANNING in html5-qrcode)
-            if (html5QrCode && (html5QrCode.getState() === 2 || html5QrCode.isScanning)) {
-                html5QrCode.pause(true);
-            }
-            isScanning = false;
-            updateScannerStatus(false, "Camera Off");
-        } else {
-            // Check state before resuming (3 = PAUSED)
-            if (html5QrCode && html5QrCode.getState() === 3) {
-                html5QrCode.resume();
-            } else if (!html5QrCode || html5QrCode.getState() === 1) {
-                await initScanner();
-            }
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("qr-reader");
+    }
+
+    // Check if camera is stopped (State 1 = NOT_STARTED)
+    if (!isScanning) {
+        const config = { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 };
+        try {
+            await html5QrCode.start(
+                { facingMode: "environment" }, 
+                config, 
+                onScanSuccess, 
+                onScanFailure
+            );
             isScanning = true;
             updateScannerStatus(true, "Camera On");
             showFeedback("Ready to scan equipment", "Point camera at any asset or Return Shelf label.", "gray");
+        } catch (err) {
+            console.error("Camera Hardware Start Error:", err);
+            updateScannerStatus(false, "Camera Off");
+            showFeedback("Camera Access Error", "Please allow camera permissions in your browser settings.", "red");
         }
-    } catch (err) {
-        console.warn("Camera state notice:", err);
-        // Force state sync on error so button never freezes
-        isScanning = !isScanning;
-        updateScannerStatus(isScanning, isScanning ? "Camera On" : "Camera Off");
     }
+}
+
+async function stopCamera() {
+    if (html5QrCode && isScanning) {
+        try {
+            // .stop() completely turns off the device camera stream
+            await html5QrCode.stop();
+            isScanning = false;
+            updateScannerStatus(false, "Camera Off");
+        } catch (err) {
+            console.error("Failed to release camera hardware:", err);
+            isScanning = false;
+            updateScannerStatus(false, "Camera Off");
+        }
+    }
+}
+
+// TOGGLE BUTTON CLICK HANDLER
+toggleCameraBtn.addEventListener('click', async () => {
+    toggleCameraBtn.disabled = true; // Lock button while hardware initializes
+    
+    if (isScanning) {
+        await stopCamera();
+    } else {
+        await startCamera();
+    }
+    
+    toggleCameraBtn.disabled = false;
 });
 
-function pauseScanner() {
-    try {
-        if (html5QrCode && isScanning) {
-            if (html5QrCode.getState() === 2) {
-                html5QrCode.pause(true);
-            }
-            isScanning = false;
-            updateScannerStatus(false, "Camera Off");
-        }
-    } catch (err) {
-        console.warn("Pause notice:", err);
-        isScanning = false;
-        updateScannerStatus(false, "Camera Off");
-    }
-}
-
-function resumeScanner() {
-    if (isUserOnHold) return;
-    try {
-        if (html5QrCode && !isScanning) {
-            if (html5QrCode.getState() === 3) {
-                html5QrCode.resume();
-            }
-            isScanning = true;
-            updateScannerStatus(true, "Camera On");
-            showFeedback("Ready to scan equipment", "Point camera at any asset or Return Shelf label.", "gray");
-        }
-    } catch (err) {
-        console.warn("Resume notice:", err);
-        isScanning = true;
-        updateScannerStatus(true, "Camera On");
-    }
-}
-
+// SCANNER STATUS & STANDBY OVERLAY CONTROLLER
 function updateScannerStatus(active, label) {
     scannerStatus.textContent = label;
     const statusDot = document.getElementById('status-ping');
+    const cameraOffScreen = document.getElementById('camera-off-screen');
 
     if (active) {
         scannerStatus.className = "text-xs font-bold text-emerald-400 tracking-wide";
         if (statusDot) statusDot.classList.remove('hidden');
+        if (cameraOffScreen) cameraOffScreen.classList.add('hidden');
         
         toggleCameraBtn.textContent = "Turn Off Camera";
         toggleCameraBtn.className = "text-xs font-semibold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 px-3 py-1 rounded-lg transition-all cursor-pointer";
     } else {
         scannerStatus.className = "text-xs font-bold text-slate-400 tracking-wide";
         if (statusDot) statusDot.classList.add('hidden');
+        if (cameraOffScreen) cameraOffScreen.classList.remove('hidden');
 
         toggleCameraBtn.textContent = "Turn On Camera";
         toggleCameraBtn.className = "text-xs font-semibold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1 rounded-lg transition-all cursor-pointer";

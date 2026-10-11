@@ -56,6 +56,33 @@
             </p>
         </div>
 
+<!-- Paste the new fields right here, under your header text -->
+    <div class="mb-4 text-left">
+        <div class="mb-3">
+            <label class="block text-xs font-medium text-slate-400 mb-1">Full Name</label>
+            <input type="text" id="reg-name" required placeholder="e.g. Juan Dela Cruz" 
+                   class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm">
+        </div>
+        <div class="mb-3">
+            <label class="block text-xs font-medium text-slate-400 mb-1">ID Number</label>
+            <input type="text" id="reg-id-number" required placeholder="e.g. 2023-12345" 
+                   class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm">
+        </div>
+        <div class="mb-4">
+            <label class="block text-xs font-medium text-slate-400 mb-1">Course/Program</label>
+            <select id="reg-course" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm">
+                <option value="" disabled selected>Select your program...</option>
+                <option value="BS Electrical Engineering">BS Electrical Engineering</option>
+                <option value="BS Computer Engineering">BS Computer Engineering</option>
+                <option value="BS Electronics Engineering">BS Electronics Engineering</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Google OAuth Sign-in Button -->
+    <button id="google-login-btn" class="w-full flex items-center justify-center gap-3 bg-gradient-to-r...">
+        <!-- ... rest of your button ... -->
+
         <!-- Google OAuth Sign-in Button -->
         <button id="google-login-btn" class="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-[0.98] text-white font-bold py-3.5 px-5 rounded-2xl shadow-lg shadow-blue-600/30 hover:shadow-blue-600/40 transition-all duration-200 cursor-pointer">
             <svg class="w-5 h-5 bg-white rounded-full p-0.5 shrink-0 shadow-xs" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -109,6 +136,11 @@
 
         // Authentication & User Registration
         loginBtn.addEventListener('click', async () => {
+            // Grab values from the new input fields
+            const nameInput = document.getElementById('reg-name').value.trim();
+            const idInput = document.getElementById('reg-id-number').value.trim();
+            const courseInput = document.getElementById('reg-course').value;
+
             try {
                 errorMsg.classList.add('hidden');
                 loadingMsg.classList.remove('hidden');
@@ -127,10 +159,19 @@
                 const userSnap = await getDoc(userRef);
 
                 if (!userSnap.exists()) {
-                    // First time login -> Register to Firestore
+                    // Require the extra fields if it is a new user registering
+                    if (!nameInput || !idInput || !courseInput) {
+                        await signOut(auth);
+                        throw new Error("Please fill out your Name, ID Number, and Course to register.");
+                    }
+
+                    // First time login -> Register to Firestore with extra details
                     await setDoc(userRef, {
                         uid: user.uid,
                         email: user.email,
+                        name: nameInput,
+                        id_number: idInput,
+                        course: courseInput,
                         role: 'student', // Default role
                         is_on_hold: false
                     });

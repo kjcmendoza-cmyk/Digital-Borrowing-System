@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EE Lab Inventory - Admin Dashboard</title>
+    
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    
+    <!-- QRCode.js CDN for QR Code Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #printable-qr-area, #printable-qr-area * { visibility: visible; }
+            #printable-qr-area {
+                position: absolute; left: 0; top: 0; width: 100%;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+            }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800 flex flex-col">
+
+    <!-- Header Navigation -->
+    <header class="bg-blue-900 text-white shadow-md p-4 flex justify-between items-center no-print">
+        <h1 class="text-xl font-bold tracking-wide">EE Lab Admin</h1>
+        <div class="flex items-center gap-4">
+            <span id="user-email" class="text-sm text-blue-200 hidden sm:inline"></span>
+            <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-1.5 rounded-lg transition">Logout</button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full no-print">
+        
+        <!-- Action Bar -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">Inventory Dashboard</h2>
+                <p class="text-sm text-gray-500">Manage equipment, inspect staged returns, and manage user hold status.</p>
+            </div>
+            <button id="open-add-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-xl shadow transition flex items-center gap-2">
+                <span>+</span> Add New Asset
+            </button>
+        </div>
+
+        <!-- 3. ADMIN USER MANAGEMENT & CLEAR HOLD SECTION -->
+        <div class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
+            <h3 class="text-lg font-bold text-gray-900 mb-1">User Management & Hold Clearance</h3>
+            <p class="text-xs text-gray-500 mb-4">Search for a student by email to inspect or unlock their borrowing account status.</p>
+
+            <form id="user-search-form" class="flex gap-3 mb-4">
+                <input type="email" id="user-search-email" placeholder="student@addu.edu.ph" required class="flex-1 border border-gray-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-xl shadow-xs transition">
+                    Search User
+                </button>
+            </form>
+
+            <div id="user-search-result" class="hidden bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <p id="searched-user-email" class="font-bold text-gray-900 text-sm"></p>
+                    <p id="searched-user-role" class="text-xs text-gray-500 mt-0.5"></p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="searched-user-hold-badge" class="text-xs font-bold px-3 py-1 rounded-full"></span>
+                    <button id="toggle-hold-btn" class="text-xs font-semibold px-4 py-2 rounded-xl shadow-xs transition"></button>
+                </div>
+            </div>
+            <p id="user-search-msg" class="text-xs text-red-500 hidden mt-2"></p>
+        </div>
+
+        <!-- ADMIN INSPECTION SECTION (Pending Staged Returns) -->
+        <div class="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-xs">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-amber-900 flex items-center gap-2">
+                        <span class="inline-block w-2.5 h-2.5 bg-amber-500 rounded-full animate-ping"></span>
+                        Pending Inspections (Return Shelf)
+                    </h3>
+                    <p class="text-xs text-amber-700">Items staged on the return shelf requiring physical grading.</p>
+                </div>
+                <span id="pending-count-badge" class="bg-amber-200 text-amber-900 text-xs font-bold px-3 py-1 rounded-full">0 Pending</span>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-xs overflow-hidden border border-amber-100">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-amber-100/50 text-xs font-semibold uppercase text-amber-800 tracking-wider">
+                            <tr>
+                                <th class="p-3">Asset Name</th>
+                                <th class="p-3">Student Email</th>
+                                <th class="p-3">QR String</th>
+                                <th class="p-3 text-center">Grading Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inspections-tbody" class="divide-y divide-amber-100 text-sm">
+                            <tr>
+                                <td colspan="4" class="p-4 text-center text-gray-400">No items currently awaiting inspection.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Real-Time Table -->
+        <div class="bg-white rounded-2xl shadow overflow-hidden">
+            <div class="p-4 border-b border-gray-100 font-bold text-gray-800">
+                All Inventory Assets
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold uppercase text-gray-500 tracking-wider">
+                        <tr>
+                            <th class="p-4">Name</th>
+                            <th class="p-4">Type</th>
+                            <th class="p-4">Status</th>
+                            <th class="p-4">Location</th>
+                            <th class="p-4">Qty</th>
+                            <th class="p-4">QR String</th>
+                            <th class="p-4 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assets-tbody" class="divide-y divide-gray-100 text-sm">
+                        <tr>
+                            <td colspan="7" class="p-6 text-center text-gray-400">Loading assets...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Asset Modal (Add / Edit) -->
+    <div id="asset-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden z-50 no-print">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
+            <h3 id="modal-title" class="text-xl font-bold mb-4">Add Asset</h3>
+            <form id="asset-form" class="space-y-4">
+                <input type="hidden" id="asset-id">
+                
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Asset Name</label>
+                    <input type="text" id="asset-name" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Type</label>
+                        <select id="asset-type" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                            <option value="Equipment">Equipment</option>
+                            <option value="Tool">Tool</option>
+                            <option value="Component">Component</option>
+                            <option value="Consumable">Consumable</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Status</label>
+                        <select id="asset-status" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                            <option value="Available">Available</option>
+                            <option value="IN_USE">IN_USE</option>
+                            <option value="PENDING_INSPECTION">PENDING_INSPECTION</option>
+                            <option value="OVERDUE">OVERDUE</option>
+                            <option value="Maintenance">Maintenance</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Location ID</label>
+                        <input type="text" id="asset-location" placeholder="e.g. LAB-101" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Quantity</label>
+                        <input type="number" id="asset-quantity" min="1" value="1" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">QR Code String</label>
+                    <input type="text" id="asset-qr-str" placeholder="e.g. EE-OSC-001" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                    <button type="button" id="close-asset-modal-btn" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl">Save Asset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- QR Code Render Modal -->
+    <div id="qr-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center space-y-4">
+            <div id="printable-qr-area">
+                <h3 id="qr-asset-title" class="text-lg font-bold text-gray-900"></h3>
+                <p id="qr-asset-str" class="text-xs text-gray-500 mb-4 font-mono"></p>
+                <div id="qrcode-container" class="flex justify-center p-2 bg-white inline-block"></div>
+            </div>
+
+            <div class="flex justify-center gap-3 pt-4 border-t border-gray-100 no-print">
+                <button type="button" id="close-qr-modal-btn" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl">Close</button>
+                <button type="button" id="print-qr-btn" class="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl flex items-center gap-2">
+                    Print QR
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modular Application Script -->
+    <script type="module" src="admin.js"></script>
+</body>
+</html>

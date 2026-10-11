@@ -329,39 +329,88 @@ async function executeCheckoutTransaction(assetId) {
     });
 }
 
+// SAFE CAMERA TOGGLE & STATUS LOGIC
+toggleCameraBtn.addEventListener('click', async () => {
+    if (isUserOnHold) return;
+
+    try {
+        if (isScanning) {
+            // Check state before pausing (2 = SCANNING in html5-qrcode)
+            if (html5QrCode && (html5QrCode.getState() === 2 || html5QrCode.isScanning)) {
+                html5QrCode.pause(true);
+            }
+            isScanning = false;
+            updateScannerStatus(false, "Camera Off");
+        } else {
+            // Check state before resuming (3 = PAUSED)
+            if (html5QrCode && html5QrCode.getState() === 3) {
+                html5QrCode.resume();
+            } else if (!html5QrCode || html5QrCode.getState() === 1) {
+                await initScanner();
+            }
+            isScanning = true;
+            updateScannerStatus(true, "Camera On");
+            showFeedback("Ready to scan equipment", "Point camera at any asset or Return Shelf label.", "gray");
+        }
+    } catch (err) {
+        console.warn("Camera state notice:", err);
+        // Force state sync on error so button never freezes
+        isScanning = !isScanning;
+        updateScannerStatus(isScanning, isScanning ? "Camera On" : "Camera Off");
+    }
+});
+
 function pauseScanner() {
-    if (html5QrCode && isScanning) {
-        html5QrCode.pause(true);
+    try {
+        if (html5QrCode && isScanning) {
+            if (html5QrCode.getState() === 2) {
+                html5QrCode.pause(true);
+            }
+            isScanning = false;
+            updateScannerStatus(false, "Camera Off");
+        }
+    } catch (err) {
+        console.warn("Pause notice:", err);
         isScanning = false;
-        updateScannerStatus(false, "Camera Paused");
+        updateScannerStatus(false, "Camera Off");
     }
 }
 
 function resumeScanner() {
     if (isUserOnHold) return;
-    if (html5QrCode && !isScanning) {
-        html5QrCode.resume();
+    try {
+        if (html5QrCode && !isScanning) {
+            if (html5QrCode.getState() === 3) {
+                html5QrCode.resume();
+            }
+            isScanning = true;
+            updateScannerStatus(true, "Camera On");
+            showFeedback("Ready to scan equipment", "Point camera at any asset or Return Shelf label.", "gray");
+        }
+    } catch (err) {
+        console.warn("Resume notice:", err);
         isScanning = true;
-        updateScannerStatus(true, "Camera Active");
-        showFeedback("Ready to scan equipment", "Point camera at any asset or Return Shelf label.", "gray");
+        updateScannerStatus(true, "Camera On");
     }
 }
 
-toggleCameraBtn.addEventListener('click', () => {
-    if (isScanning) {
-        pauseScanner();
-        toggleCameraBtn.textContent = "Resume Camera";
-    } else {
-        resumeScanner();
-        toggleCameraBtn.textContent = "Pause Camera";
-    }
-});
-
 function updateScannerStatus(active, label) {
     scannerStatus.textContent = label;
-    scannerStatus.className = active 
-        ? "text-xs font-semibold px-2.5 py-1 rounded-full bg-green-900/50 text-green-400 border border-green-700/50"
-        : "text-xs font-semibold px-2.5 py-1 rounded-full bg-yellow-900/50 text-yellow-400 border border-yellow-700/50";
+    const statusDot = document.getElementById('status-ping');
+
+    if (active) {
+        scannerStatus.className = "text-xs font-bold text-emerald-400 tracking-wide";
+        if (statusDot) statusDot.classList.remove('hidden');
+        
+        toggleCameraBtn.textContent = "Turn Off Camera";
+        toggleCameraBtn.className = "text-xs font-semibold text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 px-3 py-1 rounded-lg transition-all cursor-pointer";
+    } else {
+        scannerStatus.className = "text-xs font-bold text-slate-400 tracking-wide";
+        if (statusDot) statusDot.classList.add('hidden');
+
+        toggleCameraBtn.textContent = "Turn On Camera";
+        toggleCameraBtn.className = "text-xs font-semibold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1 rounded-lg transition-all cursor-pointer";
+    }
 }
 
 function showTransferLockoutError(message) {

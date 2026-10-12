@@ -807,7 +807,7 @@ damageForm.addEventListener('submit', async (e) => {
     }
 });
 
-// EXPORT ACTIVE BORROWINGS & LIVE MONITORING REPORT (CSV)
+// EXPORT VISUALLY STYLED EXCEL REPORT (.xls)
 exportCsvBtn.addEventListener('click', async () => {
     try {
         const snap = await getDocs(collection(db, "borrow_records"));
@@ -838,18 +838,69 @@ exportCsvBtn.addEventListener('click', async () => {
             return timeB - timeA;
         });
 
-        // Add UTF-8 Byte Order Mark (BOM) for clean spreadsheet formatting
-        let csv = "\uFEFF";
-
-        // Institutional Header & Metadata
         const dateTag = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         const timeTag = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        csv += `"ATENEO DE DAVAO UNIVERSITY - ELECTRICAL ENGINEERING LABORATORY"\n`;
-        csv += `"ACTIVE BORROWINGS & LIVE MONITORING REPORT"\n`;
-        csv += `"Generated On: ${dateTag} at ${timeTag}","Lab Operating Hours: Open ${labOperatingHours.open_time || '08:00'} - Close ${closeTimeString}"\n\n`;
 
-        // Column Headers
-        csv += `"Record ID","Asset Name","Asset Tag / QR","Borrower Name","AdDU Email","Student ID","Program / Course","Year Level","Time Checked Out","Time Returned","Borrowing Status","Overdue Status","Condition / Notes"\n`;
+        // Generate Styled HTML Table string formatted for Excel / Google Sheets
+        let html = `
+            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+            <head>
+                <meta charset="utf-8">
+                <!--[if gte mso 9]>
+                <xml>
+                    <x:ExcelWorkbook>
+                        <x:ExcelWorksheets>
+                            <x:ExcelWorksheet>
+                                <x:Name>Active Borrowings Log</x:Name>
+                                <x:WorksheetOptions>
+                                    <x:DisplayGridlines/>
+                                </x:WorksheetOptions>
+                            </x:ExcelWorksheet>
+                        </x:ExcelWorksheets>
+                    </x:ExcelWorkbook>
+                </xml>
+                <![endif]-->
+                <style>
+                    body { font-family: 'Segoe UI', Arial, sans-serif; }
+                    table { border-collapse: collapse; width: 100%; }
+                    th, td { border: 1px solid #CBD5E1; padding: 8px 12px; text-align: left; font-size: 10pt; }
+                    .header-banner { background-color: #1E3A8A; color: #FFFFFF; font-weight: bold; font-size: 10.5pt; text-align: center; }
+                    .inst-title { font-size: 14pt; font-weight: bold; color: #1E3A8A; }
+                    .inst-sub { font-size: 11pt; font-weight: bold; color: #475569; }
+                    .inst-meta { font-size: 9pt; color: #64748B; font-style: italic; }
+                    .badge-returned { background-color: #DCFCE7; color: #166534; font-weight: bold; text-align: center; }
+                    .badge-overdue { background-color: #FEE2E2; color: #991B1B; font-weight: bold; text-align: center; }
+                    .badge-active { background-color: #DBEAFE; color: #1E40AF; font-weight: bold; text-align: center; }
+                    .badge-pending { background-color: #FEF3C7; color: #92400E; font-weight: bold; text-align: center; }
+                    .summary-header { background-color: #1E3A8A; color: #FFFFFF; font-weight: bold; }
+                    .summary-val { font-weight: bold; text-align: right; }
+                </style>
+            </head>
+            <body>
+                <table>
+                    <tr><td colspan="13" class="inst-title" style="border:none;">ATENEO DE DAVAO UNIVERSITY - ELECTRICAL ENGINEERING LABORATORY</td></tr>
+                    <tr><td colspan="13" class="inst-sub" style="border:none;">ACTIVE BORROWINGS & LIVE MONITORING REPORT</td></tr>
+                    <tr><td colspan="13" class="inst-meta" style="border:none;">Generated On: ${dateTag} at ${timeTag} | Lab Operating Hours: Open ${labOperatingHours.open_time || '08:00'} - Close ${closeTimeString}</td></tr>
+                    <tr><td colspan="13" style="border:none;"></td></tr>
+                    <thead>
+                        <tr class="header-banner">
+                            <th>Record ID</th>
+                            <th>Asset Name</th>
+                            <th>Asset Tag / QR</th>
+                            <th>Borrower Name</th>
+                            <th>AdDU Email</th>
+                            <th>Student ID</th>
+                            <th>Program / Course</th>
+                            <th>Year Level</th>
+                            <th>Time Checked Out</th>
+                            <th>Time Returned</th>
+                            <th>Borrowing Status</th>
+                            <th>Overdue Status</th>
+                            <th>Condition / Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
 
         records.forEach(rec => {
             const student = usersCache[rec.student_uid] || usersCache[rec.student_email] || {};
@@ -858,7 +909,6 @@ exportCsvBtn.addEventListener('click', async () => {
             const program = student.course || rec.student_course || 'AdDU Student';
             const yearLevel = student.year_level || rec.student_year_level || 'Undergraduate';
 
-            // Timestamp Formatting
             const checkedOutTime = (rec.borrowed_at && rec.borrowed_at.toDate)
                 ? rec.borrowed_at.toDate().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
                 : ((rec.requested_at && rec.requested_at.toDate) ? rec.requested_at.toDate().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) : 'Pending');
@@ -867,7 +917,6 @@ exportCsvBtn.addEventListener('click', async () => {
                 ? rec.returned_at.toDate().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
                 : ((rec.staged_at && rec.staged_at.toDate) ? rec.staged_at.toDate().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A');
 
-            // Overdue Evaluation
             let isOverdue = false;
             const borrowTime = (rec.borrowed_at && rec.borrowed_at.toDate) 
                 ? rec.borrowed_at.toDate() 
@@ -887,60 +936,68 @@ exportCsvBtn.addEventListener('click', async () => {
                 }
             }
 
-            // Metric Counters
             if (['BORROWED', 'REQUESTED', 'STAGED'].includes(rec.status)) totalActive++;
             if (['RETURNED', 'RETURNED_DAMAGED'].includes(rec.status)) totalReturned++;
             if (isOverdue) totalOverdue++;
 
-            // Status Label
             let displayStatus = rec.status || 'UNKNOWN';
-            if (rec.status === 'BORROWED') displayStatus = 'Checked Out';
-            else if (rec.status === 'REQUESTED') displayStatus = 'Awaiting Pickup';
-            else if (rec.status === 'STAGED') displayStatus = 'Pending Inspection';
-            else if (rec.status === 'RETURNED') displayStatus = 'Returned';
-            else if (rec.status === 'RETURNED_DAMAGED') displayStatus = 'Returned (Damaged)';
+            let statusClass = 'badge-active';
+            if (rec.status === 'BORROWED') { displayStatus = 'Checked Out'; statusClass = 'badge-active'; }
+            else if (rec.status === 'REQUESTED') { displayStatus = 'Awaiting Pickup'; statusClass = 'badge-pending'; }
+            else if (rec.status === 'STAGED') { displayStatus = 'Pending Inspection'; statusClass = 'badge-pending'; }
+            else if (rec.status === 'RETURNED') { displayStatus = 'Returned'; statusClass = 'badge-returned'; }
+            else if (rec.status === 'RETURNED_DAMAGED') { displayStatus = 'Returned (Damaged)'; statusClass = 'badge-overdue'; }
 
             const overdueText = isOverdue ? 'OVERDUE' : 'On Time';
+            const overdueClass = isOverdue ? 'badge-overdue' : 'badge-returned';
             const notes = rec.damage_notes || rec.condition || 'Good';
 
-            // CSV Quote Escaping
-            const recId = `"${rec.id.replace(/"/g, '""')}"`;
-            const assetName = `"${(rec.asset_name || 'N/A').replace(/"/g, '""')}"`;
-            const assetTag = `"${(rec.qr_code_str || 'N/A').replace(/"/g, '""')}"`;
-            const bName = `"${studentName.replace(/"/g, '""')}"`;
-            const bEmail = `"${(rec.student_email || 'N/A').replace(/"/g, '""')}"`;
-            const bId = `"${studentId.replace(/"/g, '""')}"`;
-            const bProg = `"${program.replace(/"/g, '""')}"`;
-            const bYear = `"${yearLevel.replace(/"/g, '""')}"`;
-            const cOut = `"${checkedOutTime.replace(/"/g, '""')}"`;
-            const rTime = `"${returnedTime.replace(/"/g, '""')}"`;
-            const statusStr = `"${displayStatus.replace(/"/g, '""')}"`;
-            const overdueStr = `"${overdueText.replace(/"/g, '""')}"`;
-            const notesStr = `"${notes.replace(/"/g, '""')}"`;
-
-            csv += `${recId},${assetName},${assetTag},${bName},${bEmail},${bId},${bProg},${bYear},${cOut},${rTime},${statusStr},${overdueStr},${notesStr}\n`;
+            html += `
+                <tr>
+                    <td style="font-family: monospace;">${escapeHtml(rec.id)}</td>
+                    <td><strong>${escapeHtml(rec.asset_name || 'N/A')}</strong></td>
+                    <td style="font-family: monospace;">${escapeHtml(rec.qr_code_str || 'N/A')}</td>
+                    <td>${escapeHtml(studentName)}</td>
+                    <td>${escapeHtml(rec.student_email || 'N/A')}</td>
+                    <td style="font-family: monospace;">${escapeHtml(studentId)}</td>
+                    <td>${escapeHtml(program)}</td>
+                    <td>${escapeHtml(yearLevel)}</td>
+                    <td>${escapeHtml(checkedOutTime)}</td>
+                    <td>${escapeHtml(returnedTime)}</td>
+                    <td class="${statusClass}">${escapeHtml(displayStatus)}</td>
+                    <td class="${overdueClass}">${escapeHtml(overdueText)}</td>
+                    <td>${escapeHtml(notes)}</td>
+                </tr>
+            `;
         });
 
-        // Summary Metrics Section
-        csv += `\n"SUMMARY METRICS"\n`;
-        csv += `"Total Records Logged","${records.length}"\n`;
-        csv += `"Currently In-Use / Active","${totalActive}"\n`;
-        csv += `"Completed Returns","${totalReturned}"\n`;
-        csv += `"Overdue Incidents","${totalOverdue}"\n`;
+        html += `
+                    </tbody>
+                </table>
+                <br/>
+                <table style="width: 380px;">
+                    <tr class="summary-header"><td colspan="2">SUMMARY METRICS</td></tr>
+                    <tr><td>Total Records Logged</td><td class="summary-val">${records.length}</td></tr>
+                    <tr><td>Currently In-Use / Active</td><td class="summary-val">${totalActive}</td></tr>
+                    <tr><td>Completed Returns</td><td class="summary-val">${totalReturned}</td></tr>
+                    <tr><td>Overdue Incidents</td><td class="summary-val">${totalOverdue}</td></tr>
+                </table>
+            </body>
+            </html>
+        `;
 
-        // Download Trigger
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
-        link.setAttribute('download', `EE_Lab_Active_Borrowings_Report_${new Date().toISOString().slice(0,10)}.csv`);
+        link.setAttribute('download', `EE_Lab_Active_Borrowings_Report_${new Date().toISOString().slice(0,10)}.xls`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
 
     } catch (err) {
-        console.error("Export CSV error:", err);
-        alert("Failed to export Active Borrowings CSV: " + err.message);
+        console.error("Export Excel error:", err);
+        alert("Failed to export Active Borrowings Report: " + err.message);
     }
 });
 

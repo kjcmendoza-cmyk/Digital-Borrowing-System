@@ -34,6 +34,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+const PICKUP_WINDOW_MS = 5 * 60 * 1000; // 5 Minutes Expiration
+
 // DOM Elements
 const userEmailSpan = document.getElementById('user-email');
 const logoutBtn = document.getElementById('logout-btn');
@@ -176,10 +178,120 @@ async function toggleUserHoldStatus(uid, newHoldState) {
 // REAL-TIME DASHBOARD LISTENERS
 function initAdminDashboard() {
     listenToAssets();
+    listenToPendingRequests();
     listenToPendingInspections();
     listenToMaintenanceQueue();
     listenToStudentDirectory();
     listenToHoldCount();
+
+    // Auto-sweep expired requests every 10 seconds
+    setInterval(sweepExpiredRequests, 10000);
+}
+
+// REAL-TIME COUNTER PICKUP REQUESTS LISTENER
+function listenToPendingRequests() {
+    const q = query(collection(db, "borrow_records"), where("status", "==", "REQUESTED"));
+    const requestsTbody = document.getElementById('requests-tbody');
+    const requestsCountBadge = document.getElementById('requests-count-badge');
+
+    onSnapshot(q, (snapshot) => {
+        if (!requestsTbody) return;
+        if (requestsCountBadge) requestsCountBadge.textContent = `${snapshot.size} Pending`;
+
+        if (snapshot.empty) {
+            requestsTbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400">No pending pickups.</td></tr>`;
+            return;
+        }
+
+        requestsTbody.innerHTML = '';
+        snapshot.forEach((docSnap) => {
+            const record = docSnap.data();
+            const recordId = docSnap.id;
+            const requestedTime = record.requested_at?.toDate ? record.requested_at.toDate().getTime() : Date.now();
+            const elapsed = Date.now() - requestedTime;
+            const remainingSecs = Math.max(0, Math.floor((PICKUP_WINDOW_MS - elapsed) / 1000));
+
+            const mins = Math.floor(remainingSecs / 60);
+            const secs = remainingSecs % 60;
+
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-blue-50/50 transition";
+            tr.innerHTML = `
+                <td class="p-3 font-semibold text-gray-900">${escapeHtml(record.asset_name)}</td>
+                <td class="p-3 text-gray-600 font-mono text-xs">${escapeHtml(record.student_email)}</td>
+                <td class="p-3 font-mono text-xs font-bold ${remainingSecs < 60 ? 'text-red-600 animate-pulse' : 'text-blue-700'}">
+                    ⏱ ${mins}:${secs < 10 ? '0' : ''}${secs}
+                </td>
+                <td class="p-3 text-center">
+                    <div class="flex items-center justify-center gap-2">
+                        <button class="accept-btn bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer">✓ Hand Over Item</button>
+                        <button class="reject-btn bg-rose-600 hover:bg-rose-700 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer">✕ Cancel</button>
+                    </div>
+                </td>
+            `;
+
+            tr.querySelector('.accept-btn').addEventListener('click', () => acceptBorrowRequest(recordId, record.asset_id));
+            tr.querySelector('.reject-btn').addEventListener('click', () => rejectBorrowRequest(recordId, record.asset_id));
+
+            requestsTbody.appendChild(tr);
+        });
+    });
+}
+
+// AUTO-SWEEP EXPIRED REQUESTS (OLDER THAN 5 MINS)
+async function sweepExpiredRequests() {
+    try {
+        const q = query(collection(db, "borrow_records"), where("status", "==", "REQUESTED"));
+        const snapshot = await getDocs(q);
+        const now = Date.now();
+
+        snapshot.forEach(async (docSnap) => {
+            const record = docSnap.data();
+            const requestedTime = record.requested_at?.toDate ? record.requested_at.toDate().getTime() : now;
+
+            if (now - requestedTime > PICKUP_WINDOW_MS) {
+                await runTransaction(db, async (transaction) => {
+                    const recordRef = doc(db, "borrow_records", docSnap.id);
+                    const assetRef = doc(db, "assets", record.asset_id);
+
+                    transaction.update(recordRef, { status: 'EXPIRED' });
+                    transaction.update(assetRef, { status: 'Available', updated_at: serverTimestamp() });
+                });
+            }
+        });
+    } catch (err) {
+        console.warn("Auto-sweep error:", err);
+    }
+}
+
+// ACCEPT REQUEST & HANDOVER ITEM
+async function acceptBorrowRequest(recordId, assetId) {
+    try {
+        await runTransaction(db, async (transaction) => {
+            const recordRef = doc(db, "borrow_records", recordId);
+            const assetRef = doc(db, "assets", assetId);
+
+            transaction.update(recordRef, { status: 'BORROWED', borrowed_at: serverTimestamp() });
+            transaction.update(assetRef, { status: 'IN_USE', updated_at: serverTimestamp() });
+        });
+    } catch (error) {
+        alert("Failed to accept request: " + error.message);
+    }
+}
+
+// REJECT / CANCEL REQUEST
+async function rejectBorrowRequest(recordId, assetId) {
+    try {
+        await runTransaction(db, async (transaction) => {
+            const recordRef = doc(db, "borrow_records", recordId);
+            const assetRef = doc(db, "assets", assetId);
+
+            transaction.update(recordRef, { status: 'REJECTED', rejected_at: serverTimestamp() });
+            transaction.update(assetRef, { status: 'Available', updated_at: serverTimestamp() });
+        });
+    } catch (error) {
+        alert("Failed to reject request: " + error.message);
+    }
 }
 
 function listenToAssets() {
@@ -574,6 +686,8 @@ function getStatusBadge(status) {
             return `<span class="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full font-medium">Available</span>`;
         case 'IN_USE':
             return `<span class="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-medium">In Use</span>`;
+        case 'PENDING_APPROVAL':
+            return `<span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-medium animate-pulse">Awaiting Pickup</span>`;
         case 'PENDING_INSPECTION':
             return `<span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-medium animate-pulse">Pending Inspection</span>`;
         case 'OVERDUE':

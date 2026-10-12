@@ -45,7 +45,7 @@
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
                 <h2 class="text-2xl font-bold text-gray-900">Inventory Dashboard</h2>
-                <p class="text-sm text-gray-500">Manage equipment, inspect staged returns, and manage user hold status.</p>
+                <p class="text-sm text-gray-500">Manage equipment, approve student shelf requests, inspect staged returns, and manage account holds.</p>
             </div>
             <div class="flex items-center gap-3">
                 <button id="export-csv-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-xl shadow transition flex items-center gap-2 cursor-pointer text-sm">
@@ -133,7 +133,41 @@
             </div>
         </div>
 
-        <!-- 4. ADMIN INSPECTION SECTION (Pending Staged Returns) -->
+        <!-- 4. DIGITAL SHELF COUNTER PICKUPS (5-Min Expiration Queue) -->
+        <div class="mb-8 bg-blue-50 border border-blue-200 rounded-2xl p-6 shadow-xs">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-blue-900 flex items-center gap-2">
+                        <span class="inline-block w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping"></span>
+                        Pending Counter Pickups (Digital Shelf)
+                    </h3>
+                    <p class="text-xs text-blue-700">Students at the counter within their 5-minute pickup window.</p>
+                </div>
+                <span id="requests-count-badge" class="bg-blue-200 text-blue-900 text-xs font-bold px-3 py-1 rounded-full">0 Pending</span>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-xs overflow-hidden border border-blue-100">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-blue-100/50 text-xs font-semibold uppercase text-blue-800 tracking-wider">
+                            <tr>
+                                <th class="p-3">Asset Name</th>
+                                <th class="p-3">Student Email</th>
+                                <th class="p-3">Time Remaining</th>
+                                <th class="p-3 text-center">Handover Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requests-tbody" class="divide-y divide-blue-100 text-sm">
+                            <tr>
+                                <td colspan="4" class="p-4 text-center text-gray-400">No pending pickups.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. ADMIN INSPECTION SECTION (Pending Staged Returns) -->
         <div class="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-xs">
             <div class="flex items-center justify-between mb-4">
                 <div>
@@ -167,7 +201,7 @@
             </div>
         </div>
 
-        <!-- 5. MAINTENANCE QUEUE SECTION -->
+        <!-- 6. MAINTENANCE QUEUE SECTION -->
         <div class="mb-8 bg-rose-50 border border-rose-200 rounded-2xl p-6 shadow-xs">
             <div class="flex items-center justify-between mb-4">
                 <div>
@@ -200,7 +234,7 @@
             </div>
         </div>
 
-        <!-- 6. ALL INVENTORY ASSETS TABLE -->
+        <!-- 7. ALL INVENTORY ASSETS TABLE -->
         <div class="bg-white rounded-2xl shadow overflow-hidden">
             <div class="p-4 border-b border-gray-100 font-bold text-gray-800">
                 All Inventory Assets

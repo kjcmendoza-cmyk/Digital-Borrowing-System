@@ -807,39 +807,140 @@ damageForm.addEventListener('submit', async (e) => {
     }
 });
 
-// CSV INVENTORY AUDIT EXPORT
+// EXPORT ACTIVE BORROWINGS & LIVE MONITORING REPORT (CSV)
 exportCsvBtn.addEventListener('click', async () => {
     try {
-        const snap = await getDocs(collection(db, "assets"));
+        const snap = await getDocs(collection(db, "borrow_records"));
         if (snap.empty) {
-            alert("No inventory assets to export.");
+            alert("No borrowing records available to export.");
             return;
         }
 
-        let csv = "Asset Name,Type,Status,Location ID,Quantity,Asset Tag\n";
-        snap.forEach(docSnap => {
-            const a = docSnap.data();
-            const name = `"${(a.name || '').replace(/"/g, '""')}"`;
-            const type = `"${(a.type || '').replace(/"/g, '""')}"`;
-            const status = `"${(a.status || '').replace(/"/g, '""')}"`;
-            const loc = `"${(a.location_id || '').replace(/"/g, '""')}"`;
-            const qty = a.quantity || 1;
-            const tag = `"${(a.qr_code_str || '').replace(/"/g, '""')}"`;
+        const closeTimeString = (labOperatingHours && labOperatingHours.close_time) ? labOperatingHours.close_time : "17:00";
+        const timeParts = closeTimeString.split(':');
+        const closeHour = parseInt(timeParts[0], 10) || 17;
+        const closeMin = parseInt(timeParts[1], 10) || 0;
 
-            csv += `${name},${type},${status},${loc},${qty},${tag}\n`;
+        const records = [];
+        let totalActive = 0;
+        let totalReturned = 0;
+        let totalOverdue = 0;
+
+        snap.forEach(d => {
+            const data = d.data();
+            records.push({ id: d.id, ...data });
         });
 
+        // Sort records by most recent timestamp
+        records.sort((a, b) => {
+            const timeA = (a.borrowed_at && a.borrowed_at.toDate) ? a.borrowed_at.toDate().getTime() : ((a.requested_at && a.requested_at.toDate) ? a.requested_at.toDate().getTime() : 0);
+            const timeB = (b.borrowed_at && b.borrowed_at.toDate) ? b.borrowed_at.toDate().getTime() : ((b.requested_at && b.requested_at.toDate) ? b.requested_at.toDate().getTime() : 0);
+            return timeB - timeA;
+        });
+
+        // Add UTF-8 Byte Order Mark (BOM) for clean spreadsheet formatting
+        let csv = "\uFEFF";
+
+        // Institutional Header & Metadata
+        const dateTag = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        const timeTag = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        csv += `"ATENEO DE DAVAO UNIVERSITY - ELECTRICAL ENGINEERING LABORATORY"\n`;
+        csv += `"ACTIVE BORROWINGS & LIVE MONITORING REPORT"\n`;
+        csv += `"Generated On: ${dateTag} at ${timeTag}","Lab Operating Hours: Open ${labOperatingHours.open_time || '08:00'} - Close ${closeTimeString}"\n\n`;
+
+        // Column Headers
+        csv += `"Record ID","Asset Name","Asset Tag / QR","Borrower Name","AdDU Email","Student ID","Program / Course","Year Level","Time Checked Out","Time Returned","Borrowing Status","Overdue Status","Condition / Notes"\n`;
+
+        records.forEach(rec => {
+            const student = usersCache[rec.student_uid] || usersCache[rec.student_email] || {};
+            const studentName = student.name || rec.student_name || 'Student Account';
+            const studentId = student.id_number || rec.student_id || 'N/A';
+            const program = student.course || rec.student_course || 'AdDU Student';
+            const yearLevel = student.year_level || rec.student_year_level || 'Undergraduate';
+
+            // Timestamp Formatting
+            const checkedOutTime = (rec.borrowed_at && rec.borrowed_at.toDate)
+                ? rec.borrowed_at.toDate().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+                : ((rec.requested_at && rec.requested_at.toDate) ? rec.requested_at.toDate().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) : 'Pending');
+
+            const returnedTime = (rec.status === 'RETURNED' || rec.status === 'RETURNED_DAMAGED') && (rec.returned_at && rec.returned_at.toDate)
+                ? rec.returned_at.toDate().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+                : ((rec.staged_at && rec.staged_at.toDate) ? rec.staged_at.toDate().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A');
+
+            // Overdue Evaluation
+            let isOverdue = false;
+            const borrowTime = (rec.borrowed_at && rec.borrowed_at.toDate) 
+                ? rec.borrowed_at.toDate() 
+                : ((rec.requested_at && rec.requested_at.toDate) ? rec.requested_at.toDate() : null);
+
+            if (borrowTime) {
+                const closingTime = new Date(borrowTime);
+                closingTime.setHours(closeHour, closeMin, 0, 0);
+
+                if (rec.status === 'RETURNED' || rec.status === 'RETURNED_DAMAGED') {
+                    const returnTime = (rec.returned_at && rec.returned_at.toDate) 
+                        ? rec.returned_at.toDate() 
+                        : ((rec.staged_at && rec.staged_at.toDate) ? rec.staged_at.toDate() : null);
+                    if (returnTime && returnTime > closingTime) isOverdue = true;
+                } else {
+                    if (new Date() > closingTime) isOverdue = true;
+                }
+            }
+
+            // Metric Counters
+            if (['BORROWED', 'REQUESTED', 'STAGED'].includes(rec.status)) totalActive++;
+            if (['RETURNED', 'RETURNED_DAMAGED'].includes(rec.status)) totalReturned++;
+            if (isOverdue) totalOverdue++;
+
+            // Status Label
+            let displayStatus = rec.status || 'UNKNOWN';
+            if (rec.status === 'BORROWED') displayStatus = 'Checked Out';
+            else if (rec.status === 'REQUESTED') displayStatus = 'Awaiting Pickup';
+            else if (rec.status === 'STAGED') displayStatus = 'Pending Inspection';
+            else if (rec.status === 'RETURNED') displayStatus = 'Returned';
+            else if (rec.status === 'RETURNED_DAMAGED') displayStatus = 'Returned (Damaged)';
+
+            const overdueText = isOverdue ? 'OVERDUE' : 'On Time';
+            const notes = rec.damage_notes || rec.condition || 'Good';
+
+            // CSV Quote Escaping
+            const recId = `"${rec.id.replace(/"/g, '""')}"`;
+            const assetName = `"${(rec.asset_name || 'N/A').replace(/"/g, '""')}"`;
+            const assetTag = `"${(rec.qr_code_str || 'N/A').replace(/"/g, '""')}"`;
+            const bName = `"${studentName.replace(/"/g, '""')}"`;
+            const bEmail = `"${(rec.student_email || 'N/A').replace(/"/g, '""')}"`;
+            const bId = `"${studentId.replace(/"/g, '""')}"`;
+            const bProg = `"${program.replace(/"/g, '""')}"`;
+            const bYear = `"${yearLevel.replace(/"/g, '""')}"`;
+            const cOut = `"${checkedOutTime.replace(/"/g, '""')}"`;
+            const rTime = `"${returnedTime.replace(/"/g, '""')}"`;
+            const statusStr = `"${displayStatus.replace(/"/g, '""')}"`;
+            const overdueStr = `"${overdueText.replace(/"/g, '""')}"`;
+            const notesStr = `"${notes.replace(/"/g, '""')}"`;
+
+            csv += `${recId},${assetName},${assetTag},${bName},${bEmail},${bId},${bProg},${bYear},${cOut},${rTime},${statusStr},${overdueStr},${notesStr}\n`;
+        });
+
+        // Summary Metrics Section
+        csv += `\n"SUMMARY METRICS"\n`;
+        csv += `"Total Records Logged","${records.length}"\n`;
+        csv += `"Currently In-Use / Active","${totalActive}"\n`;
+        csv += `"Completed Returns","${totalReturned}"\n`;
+        csv += `"Overdue Incidents","${totalOverdue}"\n`;
+
+        // Download Trigger
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
-        link.setAttribute('download', `EE_Lab_Inventory_Audit_${new Date().toISOString().slice(0,10)}.csv`);
+        link.setAttribute('download', `EE_Lab_Active_Borrowings_Report_${new Date().toISOString().slice(0,10)}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
 
     } catch (err) {
-        alert("Failed to export CSV: " + err.message);
+        console.error("Export CSV error:", err);
+        alert("Failed to export Active Borrowings CSV: " + err.message);
     }
 });
 

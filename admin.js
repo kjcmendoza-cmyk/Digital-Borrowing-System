@@ -272,29 +272,56 @@ function listenToActiveBorrowings() {
 }
 
 function computeBorrowStatusBadge(record) {
-    if (record.status === 'RETURNED' || record.status === 'RETURNED_DAMAGED') {
-        return `<span class="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full font-bold">Returned</span>`;
-    }
+    let isOverdue = false;
 
     try {
-        const now = new Date();
-        const closeTimeString = labOperatingHours?.close_time || "17:00";
+        const closeTimeString = (labOperatingHours && labOperatingHours.close_time) ? labOperatingHours.close_time : "17:00";
         const timeParts = closeTimeString.split(':');
         const closeHour = parseInt(timeParts[0], 10) || 17;
         const closeMin = parseInt(timeParts[1], 10) || 0;
 
-        const closingTimeToday = new Date();
-        closingTimeToday.setHours(closeHour, closeMin, 0, 0);
+        // Obtain borrow timestamp (fallback to requested_at)
+        const borrowTime = (record.borrowed_at && record.borrowed_at.toDate) 
+            ? record.borrowed_at.toDate() 
+            : ((record.requested_at && record.requested_at.toDate) ? record.requested_at.toDate() : null);
 
-        if (now > closingTimeToday && (record.status === 'BORROWED' || record.status === 'STAGED')) {
-            return `<span class="bg-red-100 text-red-800 text-xs px-2.5 py-1 rounded-full font-bold animate-pulse">Overdue</span>`;
+        if (borrowTime) {
+            const closingTime = new Date(borrowTime);
+            closingTime.setHours(closeHour, closeMin, 0, 0);
+
+            if (record.status === 'RETURNED' || record.status === 'RETURNED_DAMAGED') {
+                const returnTime = (record.returned_at && record.returned_at.toDate) 
+                    ? record.returned_at.toDate() 
+                    : ((record.staged_at && record.staged_at.toDate) ? record.staged_at.toDate() : null);
+
+                if (returnTime && returnTime > closingTime) {
+                    isOverdue = true;
+                }
+            } else {
+                const now = new Date();
+                if (now > closingTime) {
+                    isOverdue = true;
+                }
+            }
         }
     } catch (e) {
         console.warn("Overdue calculation fallback:", e);
     }
 
+    // Returned Status Badges
+    if (record.status === 'RETURNED' || record.status === 'RETURNED_DAMAGED') {
+        if (isOverdue) {
+            return `<div class="flex items-center justify-center gap-1.5 whitespace-nowrap"><span class="bg-green-100 text-green-800 text-[10px] px-2 py-0.5 rounded-full font-bold">Returned</span><span class="bg-red-100 text-red-800 text-[10px] px-2 py-0.5 rounded-full font-bold">Overdue</span></div>`;
+        }
+        return `<span class="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full font-bold">Returned</span>`;
+    }
+
     if (record.status === 'REQUESTED') {
         return `<span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold">Requested</span>`;
+    }
+
+    if (isOverdue) {
+        return `<span class="bg-red-100 text-red-800 text-xs px-2.5 py-1 rounded-full font-bold animate-pulse">Overdue</span>`;
     }
 
     return `<span class="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-bold">Checked Out</span>`;

@@ -633,13 +633,13 @@ function evaluateLabSchedule() {
 
     if (isLabCurrentlyOpen) {
         // --- LABORATORY IS OPEN ---
-        welcomeStatusCard.className = "w-full p-4 rounded-2xl border border-emerald-500/30 bg-emerald-950/40 text-center backdrop-blur-md shadow-[0_0_20px_rgba(16,185,129,0.1)] mb-6";
+        welcomeStatusCard.className = "w-full p-4 rounded-2xl border border-emerald-500/30 bg-emerald-950/40 text-center backdrop-blur-md shadow-[0_0_20px_rgba(16,185,129,0.1)] mb-6 flex flex-col items-center justify-center";
         welcomeStatusCard.innerHTML = `
-            <div class="flex items-center justify-center gap-2 mb-1">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                <span class="text-xs font-black text-emerald-400 uppercase tracking-widest">Laboratory Currently Open</span>
+            <div class="flex items-center justify-center gap-2 mb-1 text-center w-full">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0"></span>
+                <span class="text-xs font-black text-emerald-400 uppercase tracking-widest text-center">Laboratory Currently Open</span>
             </div>
-            <p class="text-[11px] text-emerald-200/80">Digital equipment borrowing counter is active and processing requests.</p>
+            <p class="text-[11px] text-emerald-200/80 text-center w-full">Digital equipment borrowing counter is active and processing requests.</p>
         `;
 
         if (welcomeBarAccent) {
@@ -664,13 +664,13 @@ function evaluateLabSchedule() {
 
     } else {
         // --- LABORATORY IS CLOSED (DASHBOARD LOCKED) ---
-        welcomeStatusCard.className = "w-full p-4 rounded-2xl border border-rose-500/30 bg-rose-950/40 text-center backdrop-blur-md shadow-[0_0_20px_rgba(225,29,72,0.1)] mb-6";
+        welcomeStatusCard.className = "w-full p-4 rounded-2xl border border-rose-500/30 bg-rose-950/40 text-center backdrop-blur-md shadow-[0_0_20px_rgba(225,29,72,0.1)] mb-6 flex flex-col items-center justify-center";
         welcomeStatusCard.innerHTML = `
-            <div class="flex items-center justify-center gap-2 mb-1">
+            <div class="flex items-center justify-center gap-2 mb-1 text-center w-full">
                 <svg class="w-4 h-4 text-rose-400 animate-pulse shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m0-6h4m-2-4v4"/></svg>
-                <span class="text-xs font-black text-rose-400 uppercase tracking-widest">Laboratory Currently Closed</span>
+                <span class="text-xs font-black text-rose-400 uppercase tracking-widest text-center">Laboratory Currently Closed</span>
             </div>
-            <p class="text-[11px] text-rose-200/80">Dashboard access and tool borrowings are locked outside operational schedule.</p>
+            <p class="text-[11px] text-rose-200/80 text-center w-full">Dashboard access and tool borrowings are locked outside operational schedule.</p>
         `;
 
         if (welcomeBarAccent) {
@@ -679,8 +679,8 @@ function evaluateLabSchedule() {
 
         welcomeActionWrapper.innerHTML = `
             <div class="w-full py-3.5 px-6 rounded-2xl text-xs sm:text-sm font-bold uppercase tracking-wider text-rose-300/60 bg-rose-950/60 border border-rose-900/60 text-center select-none flex items-center justify-center gap-2">
-                <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m0-6h4m-2-4v4"/></svg>
-                <span>Dashboard Locked Outside Schedule</span>
+                <svg class="w-4 h-4 text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m0-6h4m-2-4v4"/></svg>
+                <span class="text-center">Dashboard Locked Outside Schedule</span>
             </div>
         `;
 

@@ -26,7 +26,7 @@
     <!-- Main Container -->
     <main class="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full">
         
-        <!-- Action Bar -->
+        <!-- Action Bar & Overview Header -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
                 <h2 class="text-2xl font-bold text-gray-900">Inventory Dashboard</h2>
@@ -43,8 +43,8 @@
             </div>
         </div>
 
-        <!-- 1. DASHBOARD KPI METRICS CARDS -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <!-- DASHBOARD KPI METRICS CARDS -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
                 <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Assets</p>
                 <p id="metric-total-assets" class="text-2xl font-extrabold text-gray-900 mt-1">0</p>
@@ -63,88 +63,154 @@
             </div>
         </div>
 
-        <!-- 2. QUICK USER HOLD SEARCH -->
-        <div class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
-            <h3 class="text-lg font-bold text-gray-900 mb-1">Quick User Hold Search</h3>
-            <p class="text-xs text-gray-500 mb-4">Search for a student by email to inspect or unlock their borrowing account status.</p>
-
-            <form id="user-search-form" class="flex gap-3 mb-4">
-                <input type="email" id="user-search-email" placeholder="student@addu.edu.ph" required class="flex-1 border border-gray-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-xl shadow-xs transition cursor-pointer">
-                    Search User
-                </button>
-            </form>
-
-            <div id="user-search-result" class="hidden bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <p id="searched-user-email" class="font-bold text-gray-900 text-sm"></p>
-                    <p id="searched-user-role" class="text-xs text-gray-500 mt-0.5"></p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <span id="searched-user-hold-badge" class="text-xs font-bold px-3 py-1 rounded-full"></span>
-                    <button id="toggle-hold-btn" class="text-xs font-semibold px-4 py-2 rounded-xl shadow-xs transition cursor-pointer"></button>
-                </div>
-            </div>
-            <p id="user-search-msg" class="text-xs text-red-500 hidden mt-2"></p>
+        <!-- NAVIGATION TABS BAR -->
+        <div class="border-b border-gray-200 mb-6 bg-white rounded-xl shadow-xs p-1.5 flex gap-2 overflow-x-auto">
+            <button data-tab="tab-main" class="tab-btn flex-1 min-w-[160px] py-2.5 px-4 rounded-lg text-sm transition cursor-pointer border-b-2 border-blue-600 text-blue-600 bg-blue-50/50 font-bold flex items-center justify-center gap-2">
+                <span>⚡</span> Main Queues
+            </button>
+            <button data-tab="tab-inventory" class="tab-btn flex-1 min-w-[160px] py-2.5 px-4 rounded-lg text-sm transition cursor-pointer border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium flex items-center justify-center gap-2">
+                <span>📦</span> All Inventory Assets
+            </button>
+            <button data-tab="tab-directory" class="tab-btn flex-1 min-w-[160px] py-2.5 px-4 rounded-lg text-sm transition cursor-pointer border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium flex items-center justify-center gap-2">
+                <span>👥</span> Student Roster & Holds
+            </button>
         </div>
 
-        <!-- 3. FULL STUDENT ROSTER & DIRECTORY -->
-        <div class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                <div>
-                    <h3 class="text-lg font-bold text-gray-900">Student Roster & Directory</h3>
-                    <p class="text-xs text-gray-500">Live directory of all registered student borrowing accounts.</p>
+        <!-- ==================== TAB 1: MAIN QUEUES ==================== -->
+        <div id="tab-main" class="tab-content space-y-6">
+            <!-- 2-COLUMN LAYOUT: DIGITAL SHELF PICKUPS & PENDING INSPECTIONS SIDE-BY-SIDE -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- DIGITAL SHELF COUNTER PICKUPS -->
+                <div class="bg-blue-50 border border-blue-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-base font-bold text-blue-900 flex items-center gap-2">
+                                    <span class="inline-block w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping"></span>
+                                    Pending Counter Pickups
+                                </h3>
+                                <p class="text-xs text-blue-700">Digital Shelf 5-minute pickup window</p>
+                            </div>
+                            <span id="requests-count-badge" class="bg-blue-200 text-blue-900 text-xs font-bold px-3 py-1 rounded-full shrink-0">0 Pending</span>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-xs overflow-hidden border border-blue-100">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead class="bg-blue-100/50 text-[11px] font-semibold uppercase text-blue-800 tracking-wider">
+                                        <tr>
+                                            <th class="p-3">Asset Name</th>
+                                            <th class="p-3">Student Email</th>
+                                            <th class="p-3">Time Remaining</th>
+                                            <th class="p-3 text-center">Handover</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="requests-tbody" class="divide-y divide-blue-100 text-xs">
+                                        <tr>
+                                            <td colspan="4" class="p-4 text-center text-gray-400">No pending pickups.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <input type="text" id="student-filter-input" placeholder="Filter name, ID, or course..." 
-                       class="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-64">
+
+                <!-- ADMIN INSPECTION SECTION (Pending Staged Returns) -->
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-base font-bold text-amber-900 flex items-center gap-2">
+                                    <span class="inline-block w-2.5 h-2.5 bg-amber-500 rounded-full animate-ping"></span>
+                                    Pending Inspections
+                                </h3>
+                                <p class="text-xs text-amber-700">Return Shelf items awaiting physical grading</p>
+                            </div>
+                            <span id="pending-count-badge" class="bg-amber-200 text-amber-900 text-xs font-bold px-3 py-1 rounded-full shrink-0">0 Pending</span>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-xs overflow-hidden border border-amber-100">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead class="bg-amber-100/50 text-[11px] font-semibold uppercase text-amber-800 tracking-wider">
+                                        <tr>
+                                            <th class="p-3">Asset Name</th>
+                                            <th class="p-3">Student Email</th>
+                                            <th class="p-3">Asset Tag</th>
+                                            <th class="p-3 text-center">Grading</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="inspections-tbody" class="divide-y divide-amber-100 text-xs">
+                                        <tr>
+                                            <td colspan="4" class="p-4 text-center text-gray-400">No items currently awaiting inspection.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
-            <div class="overflow-x-auto border border-gray-100 rounded-xl">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold uppercase text-gray-500">
-                        <tr>
-                            <th class="p-3">Student Name</th>
-                            <th class="p-3">ID Number</th>
-                            <th class="p-3">Course</th>
-                            <th class="p-3">AdDU Email</th>
-                            <th class="p-3">Status</th>
-                            <th class="p-3 text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="students-tbody" class="divide-y divide-gray-100 text-sm">
-                        <tr><td colspan="6" class="p-4 text-center text-gray-400">Loading student directory...</td></tr>
-                    </tbody>
-                </table>
+            <!-- MAINTENANCE & REPAIR QUEUE (AT THE BOTTOM OF BOTH QUEUES) -->
+            <div class="bg-rose-50 border border-rose-200 rounded-2xl p-6 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-rose-900 flex items-center gap-2">
+                            <span>🛠️</span> Maintenance & Repair Queue
+                        </h3>
+                        <p class="text-xs text-rose-700">Damaged equipment needing repair before returning to active inventory.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-xs overflow-hidden border border-rose-100">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-rose-100/50 text-xs font-semibold uppercase text-rose-800 tracking-wider">
+                                <tr>
+                                    <th class="p-3">Asset Name</th>
+                                    <th class="p-3">Type</th>
+                                    <th class="p-3">Location</th>
+                                    <th class="p-3">Asset Tag</th>
+                                    <th class="p-3 text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="maintenance-tbody" class="divide-y divide-rose-100 text-sm">
+                                <tr>
+                                    <td colspan="5" class="p-4 text-center text-gray-400">No assets currently in maintenance.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- 4. DIGITAL SHELF COUNTER PICKUPS (5-Min Expiration Queue) -->
-        <div class="mb-8 bg-blue-50 border border-blue-200 rounded-2xl p-6 shadow-xs">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h3 class="text-lg font-bold text-blue-900 flex items-center gap-2">
-                        <span class="inline-block w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping"></span>
-                        Pending Counter Pickups (Digital Shelf)
-                    </h3>
-                    <p class="text-xs text-blue-700">Students at the counter within their 5-minute pickup window.</p>
+        <!-- ==================== TAB 2: ALL INVENTORY ASSETS ==================== -->
+        <div id="tab-inventory" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl shadow border border-gray-200 overflow-hidden">
+                <div class="p-4 border-b border-gray-100 font-bold text-gray-800 flex justify-between items-center">
+                    <span>All Registered Equipment & Tools</span>
                 </div>
-                <span id="requests-count-badge" class="bg-blue-200 text-blue-900 text-xs font-bold px-3 py-1 rounded-full">0 Pending</span>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-xs overflow-hidden border border-blue-100">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
-                        <thead class="bg-blue-100/50 text-xs font-semibold uppercase text-blue-800 tracking-wider">
+                        <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold uppercase text-gray-500 tracking-wider">
                             <tr>
-                                <th class="p-3">Asset Name</th>
-                                <th class="p-3">Student Email</th>
-                                <th class="p-3">Time Remaining</th>
-                                <th class="p-3 text-center">Handover Action</th>
+                                <th class="p-4">Name</th>
+                                <th class="p-4">Type</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4">Location</th>
+                                <th class="p-4">Qty</th>
+                                <th class="p-4">Asset Tag</th>
+                                <th class="p-4 text-center">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="requests-tbody" class="divide-y divide-blue-100 text-sm">
+                        <tbody id="assets-tbody" class="divide-y divide-gray-100 text-sm">
                             <tr>
-                                <td colspan="4" class="p-4 text-center text-gray-400">No pending pickups.</td>
+                                <td colspan="7" class="p-6 text-center text-gray-400">Loading assets...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -152,99 +218,66 @@
             </div>
         </div>
 
-        <!-- 5. ADMIN INSPECTION SECTION (Pending Staged Returns) -->
-        <div class="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-xs">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h3 class="text-lg font-bold text-amber-900 flex items-center gap-2">
-                        <span class="inline-block w-2.5 h-2.5 bg-amber-500 rounded-full animate-ping"></span>
-                        Pending Inspections (Return Shelf)
-                    </h3>
-                    <p class="text-xs text-amber-700">Items staged on the return shelf requiring physical grading.</p>
+        <!-- ==================== TAB 3: STUDENT DIRECTORY & HOLDS ==================== -->
+        <div id="tab-directory" class="tab-content hidden space-y-6">
+            
+            <!-- QUICK USER HOLD SEARCH -->
+            <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
+                <h3 class="text-lg font-bold text-gray-900 mb-1">Quick User Hold Search</h3>
+                <p class="text-xs text-gray-500 mb-4">Search for a student by email to inspect or unlock their borrowing account status.</p>
+
+                <form id="user-search-form" class="flex gap-3 mb-4">
+                    <input type="email" id="user-search-email" placeholder="student@addu.edu.ph" required class="flex-1 border border-gray-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-xl shadow-xs transition cursor-pointer">
+                        Search User
+                    </button>
+                </form>
+
+                <div id="user-search-result" class="hidden bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <p id="searched-user-email" class="font-bold text-gray-900 text-sm"></p>
+                        <p id="searched-user-role" class="text-xs text-gray-500 mt-0.5"></p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span id="searched-user-hold-badge" class="text-xs font-bold px-3 py-1 rounded-full"></span>
+                        <button id="toggle-hold-btn" class="text-xs font-semibold px-4 py-2 rounded-xl shadow-xs transition cursor-pointer"></button>
+                    </div>
                 </div>
-                <span id="pending-count-badge" class="bg-amber-200 text-amber-900 text-xs font-bold px-3 py-1 rounded-full">0 Pending</span>
+                <p id="user-search-msg" class="text-xs text-red-500 hidden mt-2"></p>
             </div>
 
-            <div class="bg-white rounded-xl shadow-xs overflow-hidden border border-amber-100">
-                <div class="overflow-x-auto">
+            <!-- FULL STUDENT ROSTER & DIRECTORY -->
+            <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">Student Roster & Directory</h3>
+                        <p class="text-xs text-gray-500">Live directory of all registered student borrowing accounts.</p>
+                    </div>
+                    <input type="text" id="student-filter-input" placeholder="Filter name, ID, or course..." 
+                           class="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-64">
+                </div>
+
+                <div class="overflow-x-auto border border-gray-100 rounded-xl">
                     <table class="w-full text-left border-collapse">
-                        <thead class="bg-amber-100/50 text-xs font-semibold uppercase text-amber-800 tracking-wider">
+                        <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold uppercase text-gray-500">
                             <tr>
-                                <th class="p-3">Asset Name</th>
-                                <th class="p-3">Student Email</th>
-                                <th class="p-3">Asset Tag</th>
-                                <th class="p-3 text-center">Grading Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="inspections-tbody" class="divide-y divide-amber-100 text-sm">
-                            <tr>
-                                <td colspan="4" class="p-4 text-center text-gray-400">No items currently awaiting inspection.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- 6. MAINTENANCE QUEUE SECTION -->
-        <div class="mb-8 bg-rose-50 border border-rose-200 rounded-2xl p-6 shadow-xs">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h3 class="text-lg font-bold text-rose-900 flex items-center gap-2">
-                        <span>🛠️</span> Maintenance & Repair Queue
-                    </h3>
-                    <p class="text-xs text-rose-700">Damaged equipment needing repair before returning to active inventory.</p>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-xs overflow-hidden border border-rose-100">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="bg-rose-100/50 text-xs font-semibold uppercase text-rose-800 tracking-wider">
-                            <tr>
-                                <th class="p-3">Asset Name</th>
-                                <th class="p-3">Type</th>
-                                <th class="p-3">Location</th>
-                                <th class="p-3">Asset Tag</th>
+                                <th class="p-3">Student Name</th>
+                                <th class="p-3">ID Number</th>
+                                <th class="p-3">Course</th>
+                                <th class="p-3">AdDU Email</th>
+                                <th class="p-3">Status</th>
                                 <th class="p-3 text-center">Action</th>
                             </tr>
                         </thead>
-                        <tbody id="maintenance-tbody" class="divide-y divide-rose-100 text-sm">
-                            <tr>
-                                <td colspan="5" class="p-4 text-center text-gray-400">No assets currently in maintenance.</td>
-                            </tr>
+                        <tbody id="students-tbody" class="divide-y divide-gray-100 text-sm">
+                            <tr><td colspan="6" class="p-4 text-center text-gray-400">Loading student directory...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
+
         </div>
 
-        <!-- 7. ALL INVENTORY ASSETS TABLE -->
-        <div class="bg-white rounded-2xl shadow overflow-hidden">
-            <div class="p-4 border-b border-gray-100 font-bold text-gray-800">
-                All Inventory Assets
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold uppercase text-gray-500 tracking-wider">
-                        <tr>
-                            <th class="p-4">Name</th>
-                            <th class="p-4">Type</th>
-                            <th class="p-4">Status</th>
-                            <th class="p-4">Location</th>
-                            <th class="p-4">Qty</th>
-                            <th class="p-4">Asset Tag</th>
-                            <th class="p-4 text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="assets-tbody" class="divide-y divide-gray-100 text-sm">
-                        <tr>
-                            <td colspan="7" class="p-6 text-center text-gray-400">Loading assets...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
     </main>
 
     <!-- Asset Modal (Add / Edit) -->

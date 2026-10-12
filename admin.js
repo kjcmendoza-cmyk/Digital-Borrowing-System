@@ -98,6 +98,37 @@ onAuthStateChanged(auth, async (user) => {
 
 logoutBtn.addEventListener('click', () => signOut(auth).then(() => window.location.href = 'login.html'));
 
+// ==========================================
+// TAB NAVIGATION HANDLER
+// ==========================================
+const tabBtns = document.querySelectorAll('.tab-btn');
+const tabContents = document.querySelectorAll('.tab-content');
+
+tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const targetTabId = btn.getAttribute('data-tab');
+
+        // Reset styling on all tab buttons
+        tabBtns.forEach(b => {
+            b.classList.remove('border-blue-600', 'text-blue-600', 'bg-blue-50/50', 'font-bold');
+            b.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300', 'font-medium');
+        });
+
+        // Hide all tab content sections
+        tabContents.forEach(content => content.classList.add('hidden'));
+
+        // Activate clicked tab button styling
+        btn.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300', 'font-medium');
+        btn.classList.add('border-blue-600', 'text-blue-600', 'bg-blue-50/50', 'font-bold');
+
+        // Reveal active tab content section
+        const targetContent = document.getElementById(targetTabId);
+        if (targetContent) {
+            targetContent.classList.remove('hidden');
+        }
+    });
+});
+
 // USER SEARCH & CLEAR HOLD HANDLERS
 userSearchForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -213,7 +244,7 @@ function listenToPendingRequests() {
                 </td>
                 <td class="p-3 text-center">
                     <div class="flex items-center justify-center gap-2">
-                        <button class="accept-btn bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer">✓ Hand Over Item</button>
+                        <button class="accept-btn bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer">✓ Hand Over</button>
                         <button class="reject-btn bg-rose-600 hover:bg-rose-700 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer">✕ Cancel</button>
                     </div>
                 </td>

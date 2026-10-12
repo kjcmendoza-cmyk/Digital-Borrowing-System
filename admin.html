@@ -7,26 +7,11 @@
     
     <!-- Tailwind CSS v4 CDN -->
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    
-    <!-- QRCode.js CDN for QR Code Generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-    <style>
-        @media print {
-            body * { visibility: hidden; }
-            #printable-qr-area, #printable-qr-area * { visibility: visible; }
-            #printable-qr-area {
-                position: absolute; left: 0; top: 0; width: 100%;
-                display: flex; flex-direction: column; align-items: center; justify-content: center;
-            }
-            .no-print { display: none !important; }
-        }
-    </style>
 </head>
 <body class="bg-gray-100 min-h-screen text-gray-800 flex flex-col">
 
     <!-- Header Navigation with Logo -->
-    <header class="bg-blue-900 text-white shadow-md p-4 flex justify-between items-center no-print">
+    <header class="bg-blue-900 text-white shadow-md p-4 flex justify-between items-center">
         <div class="flex items-center gap-3">
             <img src="fusee-logo.png" alt="FUSEE Logo" class="h-9 w-auto object-contain shrink-0 filter drop-shadow-xs"
                  onerror="if (this.src.endsWith('fusee-logo.png')) { this.src='fusee-logo.PNG'; } else if (this.src.endsWith('fusee-logo.PNG')) { this.src='FUSEE-logo.png'; } else { this.style.display='none'; }">
@@ -39,7 +24,7 @@
     </header>
 
     <!-- Main Container -->
-    <main class="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full no-print">
+    <main class="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full">
         
         <!-- Action Bar -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -187,7 +172,7 @@
                             <tr>
                                 <th class="p-3">Asset Name</th>
                                 <th class="p-3">Student Email</th>
-                                <th class="p-3">QR String</th>
+                                <th class="p-3">Asset Tag</th>
                                 <th class="p-3 text-center">Grading Actions</th>
                             </tr>
                         </thead>
@@ -220,7 +205,7 @@
                                 <th class="p-3">Asset Name</th>
                                 <th class="p-3">Type</th>
                                 <th class="p-3">Location</th>
-                                <th class="p-3">QR String</th>
+                                <th class="p-3">Asset Tag</th>
                                 <th class="p-3 text-center">Action</th>
                             </tr>
                         </thead>
@@ -248,7 +233,7 @@
                             <th class="p-4">Status</th>
                             <th class="p-4">Location</th>
                             <th class="p-4">Qty</th>
-                            <th class="p-4">QR String</th>
+                            <th class="p-4">Asset Tag</th>
                             <th class="p-4 text-center">Actions</th>
                         </tr>
                     </thead>
@@ -263,7 +248,7 @@
     </main>
 
     <!-- Asset Modal (Add / Edit) -->
-    <div id="asset-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden z-50 no-print">
+    <div id="asset-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden z-50">
         <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
             <h3 id="modal-title" class="text-xl font-bold mb-4">Add Asset</h3>
             <form id="asset-form" class="space-y-4">
@@ -308,7 +293,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">QR Code String</label>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Asset Tag / Serial Number</label>
                     <input type="text" id="asset-qr-str" placeholder="e.g. EE-OSC-001" required class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
 
@@ -320,26 +305,8 @@
         </div>
     </div>
 
-    <!-- QR Code Render Modal -->
-    <div id="qr-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center space-y-4">
-            <div id="printable-qr-area">
-                <h3 id="qr-asset-title" class="text-lg font-bold text-gray-900"></h3>
-                <p id="qr-asset-str" class="text-xs text-gray-500 mb-4 font-mono"></p>
-                <div id="qrcode-container" class="flex justify-center p-2 bg-white inline-block"></div>
-            </div>
-
-            <div class="flex justify-center gap-3 pt-4 border-t border-gray-100 no-print">
-                <button type="button" id="close-qr-modal-btn" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl cursor-pointer">Close</button>
-                <button type="button" id="print-qr-btn" class="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl flex items-center gap-2 cursor-pointer">
-                    Print QR
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- Damage Notes Modal -->
-    <div id="damage-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden z-50 no-print">
+    <div id="damage-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden z-50">
         <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
             <div class="border-b border-gray-100 pb-3">
                 <h3 class="text-lg font-bold text-rose-900 flex items-center gap-2">

@@ -71,14 +71,6 @@ const damageForm = document.getElementById('damage-form');
 const damageNotes = document.getElementById('damage-notes');
 const cancelDamageBtn = document.getElementById('cancel-damage-btn');
 
-// QR Modal Elements
-const qrModal = document.getElementById('qr-modal');
-const qrAssetTitle = document.getElementById('qr-asset-title');
-const qrAssetStr = document.getElementById('qr-asset-str');
-const qrcodeContainer = document.getElementById('qrcode-container');
-const closeQrModalBtn = document.getElementById('close-qr-modal-btn');
-const printQrBtn = document.getElementById('print-qr-btn');
-
 // SECURITY GATE
 onAuthStateChanged(auth, async (user) => {
     if (!user || !user.email.endsWith('@addu.edu.ph')) {
@@ -335,14 +327,12 @@ function listenToAssets() {
                 <td class="p-4 font-mono text-xs text-blue-600">${escapeHtml(asset.qr_code_str)}</td>
                 <td class="p-4 text-center">
                     <div class="flex items-center justify-center gap-2">
-                        <button class="qr-btn bg-purple-50 hover:bg-purple-100 text-purple-700 p-2 rounded-lg text-xs font-medium transition cursor-pointer">QR</button>
                         <button class="edit-btn bg-blue-50 hover:bg-blue-100 text-blue-700 p-2 rounded-lg text-xs font-medium transition cursor-pointer">Edit</button>
                         <button class="delete-btn bg-red-50 hover:bg-red-100 text-red-700 p-2 rounded-lg text-xs font-medium transition cursor-pointer">Delete</button>
                     </div>
                 </td>
             `;
 
-            tr.querySelector('.qr-btn').addEventListener('click', () => renderQrModal(asset.name, asset.qr_code_str));
             tr.querySelector('.edit-btn').addEventListener('click', () => openEditModal(id, asset));
             tr.querySelector('.delete-btn').addEventListener('click', () => deleteAsset(id));
 
@@ -587,7 +577,7 @@ exportCsvBtn.addEventListener('click', async () => {
             return;
         }
 
-        let csv = "Asset Name,Type,Status,Location ID,Quantity,QR Code String\n";
+        let csv = "Asset Name,Type,Status,Location ID,Quantity,Asset Tag\n";
         snap.forEach(docSnap => {
             const a = docSnap.data();
             const name = `"${(a.name || '').replace(/"/g, '""')}"`;
@@ -595,9 +585,9 @@ exportCsvBtn.addEventListener('click', async () => {
             const status = `"${(a.status || '').replace(/"/g, '""')}"`;
             const loc = `"${(a.location_id || '').replace(/"/g, '""')}"`;
             const qty = a.quantity || 1;
-            const qr = `"${(a.qr_code_str || '').replace(/"/g, '""')}"`;
+            const tag = `"${(a.qr_code_str || '').replace(/"/g, '""')}"`;
 
-            csv += `${name},${type},${status},${loc},${qty},${qr}\n`;
+            csv += `${name},${type},${status},${loc},${qty},${tag}\n`;
         });
 
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -622,18 +612,6 @@ async function deleteAsset(id) {
         await deleteDoc(doc(db, "assets", id));
     }
 }
-
-// QR MODAL
-function renderQrModal(name, qrCodeStr) {
-    qrAssetTitle.textContent = name;
-    qrAssetStr.textContent = qrCodeStr;
-    qrcodeContainer.innerHTML = '';
-    new QRCode(qrcodeContainer, { text: qrCodeStr, width: 180, height: 180, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H });
-    qrModal.classList.remove('hidden');
-}
-
-closeQrModalBtn.addEventListener('click', () => qrModal.classList.add('hidden'));
-printQrBtn.addEventListener('click', () => window.print());
 
 // FORM HANDLERS
 openAddModalBtn.addEventListener('click', () => {

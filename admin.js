@@ -18,7 +18,8 @@ import {
     query,
     where,
     runTransaction,
-    serverTimestamp
+    serverTimestamp,
+    writeBatch // 👈 Added writeBatch
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -46,6 +47,7 @@ let labOperatingHours = {
 // DOM Elements
 const userEmailSpan = document.getElementById('user-email');
 const logoutBtn = document.getElementById('logout-btn');
+const resetLogsBtn = document.getElementById('reset-logs-btn');
 const assetsTbody = document.getElementById('assets-tbody');
 const inspectionsTbody = document.getElementById('inspections-tbody');
 const maintenanceTbody = document.getElementById('maintenance-tbody');
@@ -1141,4 +1143,46 @@ function getStatusBadge(status) {
 function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]);
+}
+// ==========================================
+// RESET COMPLETED BORROWING LOGS
+// ==========================================
+if (resetLogsBtn) {
+    resetLogsBtn.addEventListener('click', async () => {
+        const confirmReset = confirm(
+            "Are you sure you want to reset completed borrowing logs?\n\nThis will purge finished records (RETURNED, RETURNED_DAMAGED, EXPIRED, REJECTED) while keeping active borrowings ('BORROWED', 'REQUESTED', 'STAGED') intact."
+        );
+        if (!confirmReset) return;
+
+        try {
+            const snap = await getDocs(collection(db, "borrow_records"));
+            if (snap.empty) {
+                alert("No borrowing records available to reset.");
+                return;
+            }
+
+            const batch = writeBatch(db);
+            let purgedCount = 0;
+
+            snap.forEach((docSnap) => {
+                const data = docSnap.data();
+                // Purge finished entries without affecting ongoing checkouts
+                if (['RETURNED', 'RETURNED_DAMAGED', 'EXPIRED', 'REJECTED'].includes(data.status)) {
+                    batch.delete(docSnap.ref);
+                    purgedCount++;
+                }
+            });
+
+            if (purgedCount === 0) {
+                alert("No completed logs available to reset. Active borrowings were kept intact.");
+                return;
+            }
+
+            await batch.commit();
+            alert(`Successfully reset and purged ${purgedCount} completed borrowing log(s).`);
+        } catch (error) {
+            console.error("Reset borrowing logs error:", error);
+            alert("Failed to reset logs: " + error.message);
+        }
+    });
 }

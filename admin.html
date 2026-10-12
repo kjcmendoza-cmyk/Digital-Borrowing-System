@@ -78,6 +78,31 @@
 
         <!-- ==================== TAB 1: MAIN QUEUES ==================== -->
         <div id="tab-main" class="tab-content space-y-6">
+            
+            <!-- LAB OPERATING HOURS SETTINGS CARD -->
+            <div class="bg-white border border-gray-200 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="p-2.5 bg-blue-50 text-blue-700 rounded-xl text-lg">⏰</div>
+                    <div>
+                        <h3 class="font-bold text-gray-900 text-sm">Lab Operating Hours</h3>
+                        <p class="text-xs text-gray-500">Set daily opening and closing schedule to trigger overdue status automatically.</p>
+                    </div>
+                </div>
+                <form id="lab-hours-form" class="flex items-center gap-2 w-full sm:w-auto">
+                    <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-300 rounded-xl px-3 py-1.5 text-xs">
+                        <label class="text-gray-500 font-semibold">Open:</label>
+                        <input type="time" id="lab-open-time" value="08:00" required class="bg-transparent font-mono font-bold text-gray-800 outline-none cursor-pointer">
+                    </div>
+                    <div class="flex items-center gap-1.5 bg-gray-50 border border-gray-300 rounded-xl px-3 py-1.5 text-xs">
+                        <label class="text-gray-500 font-semibold">Close:</label>
+                        <input type="time" id="lab-close-time" value="17:00" required class="bg-transparent font-mono font-bold text-gray-800 outline-none cursor-pointer">
+                    </div>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-xs transition cursor-pointer">
+                        Save Hours
+                    </button>
+                </form>
+            </div>
+
             <!-- 2-COLUMN LAYOUT: DIGITAL SHELF PICKUPS & PENDING INSPECTIONS SIDE-BY-SIDE -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
@@ -155,7 +180,41 @@
 
             </div>
 
-            <!-- MAINTENANCE & REPAIR QUEUE (AT THE BOTTOM OF BOTH QUEUES) -->
+            <!-- ACTIVELY BORROWED / MONITORED TOOLS SECTION (BELOW 2-COLUMN, ABOVE MAINTENANCE) -->
+            <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <span>📊</span> Active Borrowings & Live Monitoring
+                        </h3>
+                        <p class="text-xs text-gray-500">Live monitoring of tools currently in use or recently checked out.</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto border border-gray-100 rounded-xl">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold uppercase text-gray-500 tracking-wider">
+                            <tr>
+                                <th class="p-3">Asset Name</th>
+                                <th class="p-3">Type</th>
+                                <th class="p-3">Name of Borrower</th>
+                                <th class="p-3">AdDU Email</th>
+                                <th class="p-3">Program / Year</th>
+                                <th class="p-3">Time Checked Out</th>
+                                <th class="p-3">Time Returned</th>
+                                <th class="p-3 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="active-borrowings-tbody" class="divide-y divide-gray-100 text-xs">
+                            <tr>
+                                <td colspan="8" class="p-4 text-center text-gray-400">Loading active borrowings...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- MAINTENANCE & REPAIR QUEUE (AT THE BOTTOM OF TAB 1) -->
             <div class="bg-rose-50 border border-rose-200 rounded-2xl p-6 shadow-xs">
                 <div class="flex items-center justify-between mb-4">
                     <div>

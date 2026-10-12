@@ -10,6 +10,7 @@ import {
     doc, 
     getDoc, 
     getDocs,
+    setDoc,
     addDoc, 
     updateDoc, 
     deleteDoc, 
@@ -36,14 +37,26 @@ const db = getFirestore(app);
 
 const PICKUP_WINDOW_MS = 5 * 60 * 1000; // 5 Minutes Expiration
 
+// Operating Hours Default Configuration
+let labOperatingHours = {
+    open_time: "08:00",
+    close_time: "17:00"
+};
+
 // DOM Elements
 const userEmailSpan = document.getElementById('user-email');
 const logoutBtn = document.getElementById('logout-btn');
 const assetsTbody = document.getElementById('assets-tbody');
 const inspectionsTbody = document.getElementById('inspections-tbody');
 const maintenanceTbody = document.getElementById('maintenance-tbody');
+const activeBorrowingsTbody = document.getElementById('active-borrowings-tbody');
 const pendingCountBadge = document.getElementById('pending-count-badge');
 const exportCsvBtn = document.getElementById('export-csv-btn');
+
+// Lab Hours Elements
+const labHoursForm = document.getElementById('lab-hours-form');
+const labOpenTimeInput = document.getElementById('lab-open-time');
+const labCloseTimeInput = document.getElementById('lab-close-time');
 
 // User Hold Search Elements
 const userSearchForm = document.getElementById('user-search-form');
@@ -57,6 +70,7 @@ const userSearchMsg = document.getElementById('user-search-msg');
 
 let currentFoundUser = null;
 let currentInspectingRecord = null;
+let usersCache = {}; // Global Map for fast student lookup
 
 // Asset Modal Elements
 const assetModal = document.getElementById('asset-modal');
@@ -129,6 +143,148 @@ tabBtns.forEach(btn => {
     });
 });
 
+// REAL-TIME DASHBOARD LISTENERS
+function initAdminDashboard() {
+    listenToLabHours();
+    listenToAssets();
+    listenToPendingRequests();
+    listenToPendingInspections();
+    listenToMaintenanceQueue();
+    listenToStudentDirectory();
+    listenToActiveBorrowings();
+    listenToHoldCount();
+
+    // Auto-sweep expired requests every 10 seconds
+    setInterval(sweepExpiredRequests, 10000);
+}
+
+// ==========================================
+// LAB OPERATING HOURS SETTINGS
+// ==========================================
+function listenToLabHours() {
+    const hoursDocRef = doc(db, "settings", "operating_hours");
+    onSnapshot(hoursDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            labOperatingHours = docSnap.data();
+            if (labOpenTimeInput) labOpenTimeInput.value = labOperatingHours.open_time || "08:00";
+            if (labCloseTimeInput) labCloseTimeInput.value = labOperatingHours.close_time || "17:00";
+        }
+    });
+}
+
+if (labHoursForm) {
+    labHoursForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const openVal = labOpenTimeInput.value;
+        const closeVal = labCloseTimeInput.value;
+
+        try {
+            await setDoc(doc(db, "settings", "operating_hours"), {
+                open_time: openVal,
+                close_time: closeVal,
+                updated_at: serverTimestamp()
+            });
+            alert(`Operating Hours updated: Open ${openVal} - Close ${closeVal}`);
+        } catch (err) {
+            alert("Failed to save lab hours: " + err.message);
+        }
+    });
+}
+
+// ==========================================
+// REAL-TIME ACTIVELY BORROWED MONITOR
+// ==========================================
+function listenToActiveBorrowings() {
+    if (!activeBorrowingsTbody) return;
+
+    onSnapshot(collection(db, "borrow_records"), (snapshot) => {
+        if (snapshot.empty) {
+            activeBorrowingsTbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No active borrowings recorded.</td></tr>`;
+            return;
+        }
+
+        const records = [];
+        snapshot.forEach(d => {
+            const data = d.data();
+            // Filter records that are BORROWED, STAGED, RETURNED, or RETURNED_DAMAGED
+            if (['BORROWED', 'STAGED', 'RETURNED', 'RETURNED_DAMAGED'].includes(data.status)) {
+                records.push({ id: d.id, ...data });
+            }
+        });
+
+        // Sort by most recent
+        records.sort((a, b) => {
+            const timeA = a.borrowed_at?.toDate ? a.borrowed_at.toDate().getTime() : 0;
+            const timeB = b.borrowed_at?.toDate ? b.borrowed_at.toDate().getTime() : 0;
+            return timeB - timeA;
+        });
+
+        if (records.length === 0) {
+            activeBorrowingsTbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No active borrowings recorded.</td></tr>`;
+            return;
+        }
+
+        activeBorrowingsTbody.innerHTML = '';
+        records.forEach(rec => {
+            // Student details lookup from usersCache
+            const student = usersCache[rec.student_uid] || usersCache[rec.student_email] || {};
+            const studentName = student.name || rec.student_name || 'N/A';
+            const program = student.course || student.program || 'N/A';
+            const yearLevel = student.year_level || student.year || '1st Year';
+
+            // Timestamps
+            const checkedOutTime = rec.borrowed_at?.toDate 
+                ? rec.borrowed_at.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+                : (rec.requested_at?.toDate ? rec.requested_at.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A');
+
+            const returnedTime = (rec.status === 'RETURNED' || rec.status === 'RETURNED_DAMAGED') && rec.returned_at?.toDate
+                ? rec.returned_at.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : '-';
+
+            // Calculate Status: Checked Out, Returned, or Overdue
+            const statusBadge = computeBorrowStatusBadge(rec);
+
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-gray-50 transition";
+            tr.innerHTML = `
+                <td class="p-3 font-semibold text-gray-900">${escapeHtml(rec.asset_name)}</td>
+                <td class="p-3"><span class="bg-gray-100 text-gray-700 text-[11px] px-2 py-0.5 rounded-full font-medium">Equipment</span></td>
+                <td class="p-3 font-medium text-gray-900">${escapeHtml(studentName)}</td>
+                <td class="p-3 font-mono text-gray-600 text-xs">${escapeHtml(rec.student_email)}</td>
+                <td class="p-3">
+                    <div class="font-bold text-gray-900 text-xs">${escapeHtml(program)}</div>
+                    <div class="text-[11px] text-gray-500 font-medium">${escapeHtml(yearLevel)}</div>
+                </td>
+                <td class="p-3 font-mono text-xs text-gray-700">${checkedOutTime}</td>
+                <td class="p-3 font-mono text-xs text-gray-700">${returnedTime}</td>
+                <td class="p-3 text-center">${statusBadge}</td>
+            `;
+
+            activeBorrowingsTbody.appendChild(tr);
+        });
+    });
+}
+
+function computeBorrowStatusBadge(record) {
+    if (record.status === 'RETURNED' || record.status === 'RETURNED_DAMAGED') {
+        return `<span class="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full font-bold">Returned</span>`;
+    }
+
+    // Check if overdue based on current time & lab closing time setting
+    const now = new Date();
+    const [closeHour, closeMin] = (labOperatingHours.close_time || "17:00").split(':').map(Number);
+    const closingTimeToday = new Date();
+    closingTimeToday.setHours(closeHour, closeMin, 0, 0);
+
+    const isPastClosing = now > closingTimeToday;
+
+    if (isPastClosing && (record.status === 'BORROWED' || record.status === 'STAGED')) {
+        return `<span class="bg-red-100 text-red-800 text-xs px-2.5 py-1 rounded-full font-bold animate-pulse">Overdue</span>`;
+    }
+
+    return `<span class="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-bold">Checked Out</span>`;
+}
+
 // USER SEARCH & CLEAR HOLD HANDLERS
 userSearchForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -196,19 +352,6 @@ async function toggleUserHoldStatus(uid, newHoldState) {
         console.error("Toggle hold error:", error);
         alert("Failed to update user hold status: " + error.message);
     }
-}
-
-// REAL-TIME DASHBOARD LISTENERS
-function initAdminDashboard() {
-    listenToAssets();
-    listenToPendingRequests();
-    listenToPendingInspections();
-    listenToMaintenanceQueue();
-    listenToStudentDirectory();
-    listenToHoldCount();
-
-    // Auto-sweep expired requests every 10 seconds
-    setInterval(sweepExpiredRequests, 10000);
 }
 
 let adminTimerInterval = null;
@@ -506,7 +649,10 @@ function listenToStudentDirectory() {
         snapshot.forEach((docSnap) => {
             const data = docSnap.data();
             if (data.role !== 'admin') {
-                allStudents.push({ id: docSnap.id, ...data });
+                const studentData = { id: docSnap.id, ...data };
+                allStudents.push(studentData);
+                usersCache[docSnap.id] = studentData;
+                usersCache[data.email] = studentData;
             }
         });
         renderStudentTable(allStudents);

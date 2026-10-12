@@ -180,6 +180,8 @@ function initAdminDashboard() {
     setInterval(sweepExpiredRequests, 10000);
 }
 
+let adminTimerInterval = null;
+
 // REAL-TIME COUNTER PICKUP REQUESTS LISTENER
 function listenToPendingRequests() {
     const q = query(collection(db, "borrow_records"), where("status", "==", "REQUESTED"));
@@ -200,19 +202,14 @@ function listenToPendingRequests() {
             const record = docSnap.data();
             const recordId = docSnap.id;
             const requestedTime = record.requested_at?.toDate ? record.requested_at.toDate().getTime() : Date.now();
-            const elapsed = Date.now() - requestedTime;
-            const remainingSecs = Math.max(0, Math.floor((PICKUP_WINDOW_MS - elapsed) / 1000));
-
-            const mins = Math.floor(remainingSecs / 60);
-            const secs = remainingSecs % 60;
 
             const tr = document.createElement('tr');
             tr.className = "hover:bg-blue-50/50 transition";
             tr.innerHTML = `
                 <td class="p-3 font-semibold text-gray-900">${escapeHtml(record.asset_name)}</td>
                 <td class="p-3 text-gray-600 font-mono text-xs">${escapeHtml(record.student_email)}</td>
-                <td class="p-3 font-mono text-xs font-bold ${remainingSecs < 60 ? 'text-red-600 animate-pulse' : 'text-blue-700'}">
-                    ⏱ ${mins}:${secs < 10 ? '0' : ''}${secs}
+                <td class="p-3 font-mono text-xs font-bold timer-cell" data-requested-at="${requestedTime}">
+                    ⏱ Calculating...
                 </td>
                 <td class="p-3 text-center">
                     <div class="flex items-center justify-center gap-2">
@@ -227,6 +224,29 @@ function listenToPendingRequests() {
 
             requestsTbody.appendChild(tr);
         });
+
+        // Run immediately and ensure interval is running
+        updateAdminTimers();
+        if (!adminTimerInterval) {
+            adminTimerInterval = setInterval(updateAdminTimers, 1000);
+        }
+    });
+}
+
+function updateAdminTimers() {
+    const timerCells = document.querySelectorAll('.timer-cell');
+    const now = Date.now();
+
+    timerCells.forEach(cell => {
+        const requestedTime = parseInt(cell.getAttribute('data-requested-at'), 10);
+        const elapsed = now - requestedTime;
+        const remainingSecs = Math.max(0, Math.floor((PICKUP_WINDOW_MS - elapsed) / 1000));
+
+        const mins = Math.floor(remainingSecs / 60);
+        const secs = remainingSecs % 60;
+
+        cell.className = `p-3 font-mono text-xs font-bold timer-cell ${remainingSecs < 60 ? 'text-red-600 animate-pulse' : 'text-blue-700'}`;
+        cell.textContent = `⏱ ${mins}:${secs < 10 ? '0' : ''}${secs}`;
     });
 }
 

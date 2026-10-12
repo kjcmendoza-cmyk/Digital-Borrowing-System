@@ -807,7 +807,7 @@ damageForm.addEventListener('submit', async (e) => {
     }
 });
 
-// EXPORT VISUALLY STYLED EXCEL REPORT (.xls) - GOOGLE SHEETS & EXCEL COMPATIBLE
+// EXPORT VISUALLY STYLED EXCEL REPORT (.xls)
 exportCsvBtn.addEventListener('click', async () => {
     try {
         const snap = await getDocs(collection(db, "borrow_records"));
@@ -841,7 +841,7 @@ exportCsvBtn.addEventListener('click', async () => {
         const dateTag = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         const timeTag = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-        // Generate Styled HTML Table string formatted for Google Sheets & Excel
+        // Generate Styled HTML Table string formatted for Excel / Google Sheets
         let html = `
             <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
             <head>
@@ -862,44 +862,41 @@ exportCsvBtn.addEventListener('click', async () => {
                 <![endif]-->
                 <style>
                     body { font-family: 'Segoe UI', Arial, sans-serif; }
-                    table { border-collapse: collapse; table-layout: auto; }
-                    th, td { border: 1px solid #CBD5E1; padding: 10px 14px; text-align: left; font-size: 10pt; vertical-align: middle; }
-                    .header-banner th { background-color: #1E3A8A; color: #FFFFFF; font-weight: bold; font-size: 10.5pt; text-align: center; border: 1px solid #1E3A8A; }
-                    .inst-title { font-size: 15pt; font-weight: bold; color: #1E3A8A; padding-bottom: 4px; text-align: left; }
-                    .inst-sub { font-size: 12pt; font-weight: bold; color: #334155; padding-bottom: 4px; text-align: left; }
-                    .inst-meta { font-size: 9.5pt; color: #64748B; font-style: italic; padding-bottom: 12px; text-align: left; }
+                    table { border-collapse: collapse; width: 100%; }
+                    th, td { border: 1px solid #CBD5E1; padding: 8px 12px; text-align: left; font-size: 10pt; }
+                    .header-banner { background-color: #1E3A8A; color: #FFFFFF; font-weight: bold; font-size: 10.5pt; text-align: center; }
+                    .inst-title { font-size: 14pt; font-weight: bold; color: #1E3A8A; }
+                    .inst-sub { font-size: 11pt; font-weight: bold; color: #475569; }
+                    .inst-meta { font-size: 9pt; color: #64748B; font-style: italic; }
                     .badge-returned { background-color: #DCFCE7; color: #166534; font-weight: bold; text-align: center; }
                     .badge-overdue { background-color: #FEE2E2; color: #991B1B; font-weight: bold; text-align: center; }
                     .badge-active { background-color: #DBEAFE; color: #1E40AF; font-weight: bold; text-align: center; }
                     .badge-pending { background-color: #FEF3C7; color: #92400E; font-weight: bold; text-align: center; }
-                    .summary-header { background-color: #1E3A8A; color: #FFFFFF; font-weight: bold; text-align: center; }
+                    .summary-header { background-color: #1E3A8A; color: #FFFFFF; font-weight: bold; }
                     .summary-val { font-weight: bold; text-align: right; }
                 </style>
             </head>
             <body>
                 <table>
-                    <!-- 1. INSTITUTIONAL HEADER AT THE VERY TOP -->
                     <tr><td colspan="13" class="inst-title" style="border:none;">ATENEO DE DAVAO UNIVERSITY - ELECTRICAL ENGINEERING LABORATORY</td></tr>
                     <tr><td colspan="13" class="inst-sub" style="border:none;">ACTIVE BORROWINGS & LIVE MONITORING REPORT</td></tr>
                     <tr><td colspan="13" class="inst-meta" style="border:none;">Generated On: ${dateTag} at ${timeTag} | Lab Operating Hours: Open ${labOperatingHours.open_time || '08:00'} - Close ${closeTimeString}</td></tr>
-                    <tr><td colspan="13" style="border:none; height: 12px;"></td></tr>
-
-                    <!-- 2. TABLE HEADERS WITH EXPLICIT HTML WIDTH ATTRIBUTES FOR GOOGLE SHEETS -->
+                    <tr><td colspan="13" style="border:none;"></td></tr>
                     <thead>
                         <tr class="header-banner">
-                            <th width="180">Record ID</th>
-                            <th width="160">Asset Name</th>
-                            <th width="140">Asset Tag / QR</th>
-                            <th width="180">Borrower Name</th>
-                            <th width="240">AdDU Email</th>
-                            <th width="150">Student ID</th>
-                            <th width="220">Program / Course</th>
-                            <th width="120">Year Level</th>
-                            <th width="180">Time Checked Out</th>
-                            <th width="180">Time Returned</th>
-                            <th width="160">Borrowing Status</th>
-                            <th width="140">Overdue Status</th>
-                            <th width="180">Condition / Notes</th>
+                            <th>Record ID</th>
+                            <th>Asset Name</th>
+                            <th>Asset Tag / QR</th>
+                            <th>Borrower Name</th>
+                            <th>AdDU Email</th>
+                            <th>Student ID</th>
+                            <th>Program / Course</th>
+                            <th>Year Level</th>
+                            <th>Time Checked Out</th>
+                            <th>Time Returned</th>
+                            <th>Borrowing Status</th>
+                            <th>Overdue Status</th>
+                            <th>Condition / Notes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -978,8 +975,7 @@ exportCsvBtn.addEventListener('click', async () => {
                     </tbody>
                 </table>
                 <br/>
-                <br/>
-                <table style="width: 400px; border-collapse: collapse;">
+                <table style="width: 380px;">
                     <tr class="summary-header"><td colspan="2">SUMMARY METRICS</td></tr>
                     <tr><td>Total Records Logged</td><td class="summary-val">${records.length}</td></tr>
                     <tr><td>Currently In-Use / Active</td><td class="summary-val">${totalActive}</td></tr>

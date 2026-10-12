@@ -807,7 +807,9 @@ damageForm.addEventListener('submit', async (e) => {
     }
 });
 
-// EXPORT VISUALLY STYLED EXCEL REPORT (.xls)
+// ==========================================
+// PAASCU AUDIT-READY EXCEL LOGBOOK EXPORT (.xls)
+// ==========================================
 exportCsvBtn.addEventListener('click', async () => {
     try {
         const snap = await getDocs(collection(db, "borrow_records"));
@@ -840,6 +842,7 @@ exportCsvBtn.addEventListener('click', async () => {
 
         const dateTag = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         const timeTag = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const generatedBy = auth.currentUser ? auth.currentUser.email : 'System Admin';
 
         // Calculate summary metrics
         records.forEach(rec => {
@@ -867,7 +870,7 @@ exportCsvBtn.addEventListener('click', async () => {
             if (isOverdue) totalOverdue++;
         });
 
-        // Generate Styled HTML Table string formatted for Excel / Google Sheets
+        // Excel XML Header with Gridlines and Formatting Settings
         let html = `
             <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
             <head>
@@ -877,9 +880,14 @@ exportCsvBtn.addEventListener('click', async () => {
                     <x:ExcelWorkbook>
                         <x:ExcelWorksheets>
                             <x:ExcelWorksheet>
-                                <x:Name>Active Borrowings Log</x:Name>
+                                <x:Name>PAASCU Borrowing Logbook</x:Name>
                                 <x:WorksheetOptions>
                                     <x:DisplayGridlines/>
+                                    <x:Print>
+                                        <x:ValidPrinterInfo/>
+                                        <x:HorizontalResolution>600</x:HorizontalResolution>
+                                        <x:VerticalResolution>600</x:VerticalResolution>
+                                    </x:Print>
                                 </x:WorksheetOptions>
                             </x:ExcelWorksheet>
                         </x:ExcelWorksheets>
@@ -887,107 +895,112 @@ exportCsvBtn.addEventListener('click', async () => {
                 </xml>
                 <![endif]-->
                 <style>
-                    body { font-family: 'Segoe UI', Arial, sans-serif; }
-                    table { border-collapse: collapse; margin-bottom: 20px; }
-                    th, td { border: 1px solid #CBD5E1; padding: 10px 14px; text-align: left; font-size: 10pt; vertical-align: middle; white-space: nowrap; }
+                    body { font-family: 'Segoe UI', Arial, sans-serif; color: #1E293B; background-color: #FFFFFF; }
+                    table { border-collapse: collapse; margin-bottom: 30px; width: 100%; table-layout: fixed; }
+                    th, td { border: 1px solid #CBD5E1; padding: 8px 12px; font-size: 10pt; vertical-align: middle; white-space: nowrap; }
                     
-                    /* Title Section Styling */
-                    .title-cell { font-size: 15pt; font-weight: bold; color: #1B365D; border: none !important; padding-bottom: 4px; }
-                    .subtitle-cell { font-size: 11pt; font-weight: bold; color: #475569; border: none !important; padding-bottom: 4px; }
-                    .meta-cell { font-size: 9.5pt; color: #64748B; font-style: italic; border: none !important; padding-bottom: 16px; }
-                    .blank-row { border: none !important; background-color: transparent !important; height: 16px; }
+                    /* Institutional Header */
+                    .univ-title { font-size: 16pt; font-weight: bold; color: #0F2C59; border: none !important; padding-bottom: 2px; }
+                    .dept-title { font-size: 11pt; font-weight: 600; color: #475569; border: none !important; padding-bottom: 2px; }
+                    .doc-title { font-size: 12pt; font-weight: bold; color: #1E3A8A; border: none !important; padding-bottom: 6px; }
+                    .meta-info { font-size: 9pt; color: #64748B; border: none !important; padding-bottom: 14px; }
+                    .blank-row { border: none !important; background-color: transparent !important; height: 12px; }
                     
-                    /* Header Banner Styling (Deep Navy Reference) */
-                    .header-banner { background-color: #1B365D; color: #FFFFFF; font-weight: bold; font-size: 10.5pt; text-align: center; }
-                    .header-banner th { border: 1px solid #0F2C59; color: #FFFFFF; background-color: #1B365D; text-align: center; padding: 12px 14px; }
-                    
-                    /* Summary Card Styling */
-                    .summary-header { background-color: #1B365D; color: #FFFFFF; font-weight: bold; text-align: left; }
-                    .summary-label { font-weight: 600; color: #334155; background-color: #F8FAFC; }
-                    .summary-val { font-weight: bold; text-align: right; color: #0F172A; background-color: #FFFFFF; }
+                    /* Executive KPI Card Table */
+                    .kpi-table { border: 1px solid #94A3B8; border-collapse: collapse; margin-bottom: 20px; }
+                    .kpi-header { background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; }
+                    .kpi-label { font-size: 9pt; font-weight: 600; color: #475569; background-color: #F8FAFC; text-align: center; }
+                    .kpi-value { font-size: 14pt; font-weight: bold; color: #0F2C59; background-color: #FFFFFF; text-align: center; }
+                    .kpi-value-active { font-size: 14pt; font-weight: bold; color: #1D4ED8; background-color: #EFF6FF; text-align: center; }
+                    .kpi-value-returned { font-size: 14pt; font-weight: bold; color: #15803D; background-color: #F0FDF4; text-align: center; }
+                    .kpi-value-overdue { font-size: 14pt; font-weight: bold; color: #B91C1C; background-color: #FEF2F2; text-align: center; }
 
-                    /* Status Badges Matching Reference Design */
-                    .badge-returned { background-color: #DCFCE7; color: #166534; font-weight: bold; text-align: center; }
-                    .badge-overdue { background-color: #FEE2E2; color: #991B1B; font-weight: bold; text-align: center; }
-                    .badge-active { background-color: #DBEAFE; color: #1E40AF; font-weight: bold; text-align: center; }
-                    .badge-pending { background-color: #FEF3C7; color: #92400E; font-weight: bold; text-align: center; }
+                    /* Data Table Header */
+                    .tbl-header th { background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; }
+                    
+                    /* Row Shading */
+                    .row-even { background-color: #FFFFFF; }
+                    .row-odd { background-color: #F8FAFC; }
+                    
+                    /* Cell Formatting Utilities */
+                    .txt-code { font-family: 'Consolas', 'Courier New', monospace; mso-number-format: "\\@"; text-align: center; }
+                    .txt-center { text-align: center; }
+                    .txt-left { text-align: left; }
+                    .txt-bold { font-weight: bold; }
+
+                    /* PAASCU Audit Status Badges */
+                    .badge-active { background-color: #DBEAFE; color: #1E40AF; font-weight: bold; text-align: center; border-radius: 4px; }
+                    .badge-returned { background-color: #DCFCE7; color: #15803D; font-weight: bold; text-align: center; border-radius: 4px; }
+                    .badge-pending { background-color: #FEF3C7; color: #B45309; font-weight: bold; text-align: center; border-radius: 4px; }
+                    .badge-overdue { background-color: #FEE2E2; color: #B91C1C; font-weight: bold; text-align: center; border-radius: 4px; }
+                    .badge-ontime { background-color: #F1F5F9; color: #475569; text-align: center; border-radius: 4px; }
                 </style>
             </head>
             <body>
                 <table>
                     <colgroup>
-                        <col width="150" />
-                        <col width="170" />
-                        <col width="140" />
-                        <col width="190" />
-                        <col width="240" />
-                        <col width="120" />
-                        <col width="220" />
-                        <col width="120" />
-                        <col width="170" />
-                        <col width="170" />
-                        <col width="160" />
-                        <col width="150" />
-                        <col width="190" />
+                        <col style="width: 130px;" />
+                        <col style="width: 220px;" />
+                        <col style="width: 140px;" />
+                        <col style="width: 180px;" />
+                        <col style="width: 240px;" />
+                        <col style="width: 120px;" />
+                        <col style="width: 200px;" />
+                        <col style="width: 110px;" />
+                        <col style="width: 160px;" />
+                        <col style="width: 160px;" />
+                        <col style="width: 160px;" />
+                        <col style="width: 130px;" />
+                        <col style="width: 220px;" />
                     </colgroup>
                     
-                    <!-- 1. TITLE HEADER AT THE VERY TOP -->
-                    <tr><td colspan="13" class="title-cell">ATENEO DE DAVAO UNIVERSITY - ELECTRICAL ENGINEERING LABORATORY</td></tr>
-                    <tr><td colspan="13" class="subtitle-cell">ACTIVE BORROWINGS & LIVE MONITORING REPORT</td></tr>
-                    <tr><td colspan="13" class="meta-cell">Generated On: ${dateTag} at ${timeTag} | Lab Operating Hours: Open ${labOperatingHours.open_time || '08:00'} - Close ${closeTimeString}</td></tr>
+                    <!-- INSTITUTIONAL PAASCU ACCREDITATION HEADER -->
+                    <tr><td colspan="13" class="univ-title">ATENEO DE DAVAO UNIVERSITY</td></tr>
+                    <tr><td colspan="13" class="dept-title">School of Engineering & Architecture — Electrical Engineering Department</td></tr>
+                    <tr><td colspan="13" class="doc-title">OFFICIAL LABORATORY ASSET & BORROWING LOGBOOK (PAASCU AUDIT REPORT)</td></tr>
+                    <tr><td colspan="13" class="meta-info">Report Generated: <strong>${dateTag} at ${timeTag}</strong> | Generated By: <strong>${escapeHtml(generatedBy)}</strong> | Operating Hours: Open ${labOperatingHours.open_time || '08:00'} - Close ${closeTimeString}</td></tr>
                     
-                    <tr class="blank-row"><td colspan="13" class="blank-row"></td></tr>
+                    <tr class="blank-row"><td colspan="13"></td></tr>
 
-                    <!-- 2. SUMMARY METRICS CARD (ABOVE LOGBOOK TABLE) -->
-                    <tr class="summary-header">
-                        <td colspan="3" style="background-color:#1B365D; color:#FFFFFF; font-weight:bold;">SUMMARY METRICS</td>
-                        <td colspan="10" style="border:none;"></td>
+                    <!-- EXECUTIVE KPI METRICS BLOCK -->
+                    <tr class="kpi-header">
+                        <td colspan="3">TOTAL RECORDS LOGGED</td>
+                        <td colspan="3">CURRENTLY ACTIVE / IN-USE</td>
+                        <td colspan="3">COMPLETED RETURNS</td>
+                        <td colspan="4">OVERDUE INCIDENTS</td>
                     </tr>
                     <tr>
-                        <td colspan="2" class="summary-label">Total Records Logged</td>
-                        <td class="summary-val">${records.length}</td>
-                        <td colspan="10" style="border:none;"></td>
-                    </tr>
-                    <tr>
-                        <td colspan="2" class="summary-label">Currently In-Use / Active</td>
-                        <td class="summary-val">${totalActive}</td>
-                        <td colspan="10" style="border:none;"></td>
-                    </tr>
-                    <tr>
-                        <td colspan="2" class="summary-label">Completed Returns</td>
-                        <td class="summary-val">${totalReturned}</td>
-                        <td colspan="10" style="border:none;"></td>
-                    </tr>
-                    <tr>
-                        <td colspan="2" class="summary-label">Overdue Incidents</td>
-                        <td class="summary-val">${totalOverdue}</td>
-                        <td colspan="10" style="border:none;"></td>
+                        <td colspan="3" class="kpi-value">${records.length}</td>
+                        <td colspan="3" class="kpi-value-active">${totalActive}</td>
+                        <td colspan="3" class="kpi-value-returned">${totalReturned}</td>
+                        <td colspan="4" class="kpi-value-overdue">${totalOverdue}</td>
                     </tr>
 
-                    <tr class="blank-row"><td colspan="13" class="blank-row"></td></tr>
+                    <tr class="blank-row"><td colspan="13"></td></tr>
 
-                    <!-- 3. MAIN LOGBOOK TABLE HEADERS -->
+                    <!-- MAIN LOGBOOK TABLE HEADERS -->
                     <thead>
-                        <tr class="header-banner">
-                            <th style="width:150px;">Record ID</th>
-                            <th style="width:170px;">Asset Name</th>
-                            <th style="width:140px;">Asset Tag / QR</th>
-                            <th style="width:190px;">Borrower Name</th>
-                            <th style="width:240px;">AdDU Email</th>
-                            <th style="width:120px;">Student ID</th>
-                            <th style="width:220px;">Program / Course</th>
-                            <th style="width:120px;">Year Level</th>
-                            <th style="width:170px;">Time Checked Out</th>
-                            <th style="width:170px;">Time Returned</th>
-                            <th style="width:160px;">Borrowing Status</th>
-                            <th style="width:150px;">Overdue Status</th>
-                            <th style="width:190px;">Condition / Notes</th>
+                        <tr class="tbl-header">
+                            <th style="width: 130px;">Record ID</th>
+                            <th style="width: 220px;">Equipment / Asset Name</th>
+                            <th style="width: 140px;">Asset Tag / QR</th>
+                            <th style="width: 180px;">Borrower Name</th>
+                            <th style="width: 240px;">AdDU Institutional Email</th>
+                            <th style="width: 120px;">Student ID</th>
+                            <th style="width: 200px;">Program / Course</th>
+                            <th style="width: 110px;">Year Level</th>
+                            <th style="width: 160px;">Time Checked Out</th>
+                            <th style="width: 160px;">Time Returned</th>
+                            <th style="width: 160px;">Borrow Status</th>
+                            <th style="width: 130px;">Overdue Status</th>
+                            <th style="width: 220px;">Condition / Audit Notes</th>
                         </tr>
                     </thead>
                     <tbody>
         `;
 
-        records.forEach(rec => {
+        // DATA ROWS WITH ALTERNATING ROW SHADING
+        records.forEach((rec, idx) => {
             const student = usersCache[rec.student_uid] || usersCache[rec.student_email] || {};
             const studentName = student.name || rec.student_name || 'Student Account';
             const studentId = student.id_number || rec.student_id || 'N/A';
@@ -996,11 +1009,11 @@ exportCsvBtn.addEventListener('click', async () => {
 
             const checkedOutTime = (rec.borrowed_at && rec.borrowed_at.toDate)
                 ? rec.borrowed_at.toDate().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
-                : ((rec.requested_at && rec.requested_at.toDate) ? rec.requested_at.toDate().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) : 'Pending');
+                : ((rec.requested_at && rec.requested_at.toDate) ? rec.requested_at.toDate().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) : 'Pending Pickup');
 
             const returnedTime = (rec.status === 'RETURNED' || rec.status === 'RETURNED_DAMAGED') && (rec.returned_at && rec.returned_at.toDate)
                 ? rec.returned_at.toDate().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
-                : ((rec.staged_at && rec.staged_at.toDate) ? rec.staged_at.toDate().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A');
+                : ((rec.staged_at && rec.staged_at.toDate) ? rec.staged_at.toDate().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) : '-');
 
             let isOverdue = false;
             const borrowTime = (rec.borrowed_at && rec.borrowed_at.toDate) 
@@ -1030,24 +1043,25 @@ exportCsvBtn.addEventListener('click', async () => {
             else if (rec.status === 'RETURNED_DAMAGED') { displayStatus = 'Returned (Damaged)'; statusClass = 'badge-overdue'; }
 
             const overdueText = isOverdue ? 'OVERDUE' : 'On Time';
-            const overdueClass = isOverdue ? 'badge-overdue' : 'badge-returned';
-            const notes = rec.damage_notes || rec.condition || 'Good';
+            const overdueClass = isOverdue ? 'badge-overdue' : 'badge-ontime';
+            const notes = rec.damage_notes || rec.condition || 'Good Condition';
+            const rowClass = idx % 2 === 0 ? 'row-even' : 'row-odd';
 
             html += `
-                <tr>
-                    <td style="font-family: monospace;">${escapeHtml(rec.id)}</td>
-                    <td><strong>${escapeHtml(rec.asset_name || 'N/A')}</strong></td>
-                    <td style="font-family: monospace;">${escapeHtml(rec.qr_code_str || 'N/A')}</td>
-                    <td>${escapeHtml(studentName)}</td>
-                    <td>${escapeHtml(rec.student_email || 'N/A')}</td>
-                    <td style="font-family: monospace;">${escapeHtml(studentId)}</td>
-                    <td>${escapeHtml(program)}</td>
-                    <td>${escapeHtml(yearLevel)}</td>
-                    <td>${escapeHtml(checkedOutTime)}</td>
-                    <td>${escapeHtml(returnedTime)}</td>
-                    <td class="${statusClass}">${escapeHtml(displayStatus)}</td>
-                    <td class="${overdueClass}">${escapeHtml(overdueText)}</td>
-                    <td>${escapeHtml(notes)}</td>
+                <tr class="${rowClass}">
+                    <td class="txt-code" style="width: 130px;">${escapeHtml(rec.id)}</td>
+                    <td class="txt-bold txt-left" style="width: 220px;">${escapeHtml(rec.asset_name || 'N/A')}</td>
+                    <td class="txt-code" style="width: 140px;">${escapeHtml(rec.qr_code_str || 'N/A')}</td>
+                    <td class="txt-left" style="width: 180px;">${escapeHtml(studentName)}</td>
+                    <td class="txt-left" style="width: 240px;">${escapeHtml(rec.student_email || 'N/A')}</td>
+                    <td class="txt-code" style="width: 120px;">${escapeHtml(studentId)}</td>
+                    <td class="txt-left" style="width: 200px;">${escapeHtml(program)}</td>
+                    <td class="txt-center" style="width: 110px;">${escapeHtml(yearLevel)}</td>
+                    <td class="txt-center" style="width: 160px;">${escapeHtml(checkedOutTime)}</td>
+                    <td class="txt-center" style="width: 160px;">${escapeHtml(returnedTime)}</td>
+                    <td class="${statusClass}" style="width: 160px;">${escapeHtml(displayStatus)}</td>
+                    <td class="${overdueClass}" style="width: 130px;">${escapeHtml(overdueText)}</td>
+                    <td class="txt-left" style="width: 220px;">${escapeHtml(notes)}</td>
                 </tr>
             `;
         });
@@ -1063,14 +1077,14 @@ exportCsvBtn.addEventListener('click', async () => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
-        link.setAttribute('download', `EE_Lab_Active_Borrowings_Report_${new Date().toISOString().slice(0,10)}.xls`);
+        link.setAttribute('download', `PAASCU_EE_Lab_Borrowing_Logbook_${new Date().toISOString().slice(0,10)}.xls`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
 
     } catch (err) {
         console.error("Export Excel error:", err);
-        alert("Failed to export Active Borrowings Report: " + err.message);
+        alert("Failed to export PAASCU Borrowing Logbook: " + err.message);
     }
 });
 

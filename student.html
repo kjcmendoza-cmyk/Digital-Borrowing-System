@@ -39,16 +39,16 @@
     </div>
 
     <!-- Header / Navbar (Fixed Viewport Top) -->
-    <header class="bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/60 px-3.5 sm:px-5 py-2 shrink-0 z-40 flex justify-between items-center gap-2 shadow-2xl shadow-black/40">
+    <header class="bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/60 px-3 sm:px-5 py-2 shrink-0 z-40 flex justify-between items-center gap-2 shadow-2xl shadow-black/40">
         <!-- Left Section: Logo & User Information -->
-        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+        <div class="flex items-center gap-2 min-w-0 flex-1">
             <div class="p-1 rounded-xl bg-slate-800/60 border border-slate-700/50 shadow-inner shrink-0">
                 <img src="fusee-logo.png" alt="FUSEE" class="h-6 sm:h-7 w-auto object-contain shrink-0 filter drop-shadow" 
                      onerror="if (this.src.endsWith('fusee-logo.png')) { this.src='fusee-logo.PNG'; } else if (this.src.endsWith('fusee-logo.PNG')) { this.src='FUSEE-logo.png'; } else { this.style.display='none'; }">
             </div>
             <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-1.5">
-                    <h1 class="text-xs sm:text-sm font-black tracking-wider text-white uppercase whitespace-nowrap">EE LABORATORY</h1>
+                    <h1 class="text-[11px] sm:text-sm font-black tracking-wider text-white uppercase whitespace-nowrap">EE LABORATORY</h1>
                     <span class="hidden sm:inline-flex text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30 uppercase tracking-widest shrink-0 shadow-[0_0_10px_rgba(59,130,246,0.2)]">FUSEE</span>
                 </div>
                 <p id="user-email-display" class="text-[10px] sm:text-[11px] text-slate-400 font-mono truncate mt-0.5">Loading profile...</p>
@@ -57,11 +57,11 @@
 
         <!-- Right Section: Action Buttons -->
         <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <button id="open-history-btn" class="bg-slate-800/80 hover:bg-blue-600 hover:text-white text-slate-300 border border-slate-700/70 hover:border-blue-500/50 text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5 hover:shadow-[0_0_12px_rgba(37,99,235,0.4)] active:scale-95">
+            <button id="open-history-btn" class="bg-slate-800/80 hover:bg-blue-600 hover:text-white text-slate-300 border border-slate-700/70 hover:border-blue-500/50 text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1 hover:shadow-[0_0_12px_rgba(37,99,235,0.4)] active:scale-95">
                 <svg class="w-3.5 h-3.5 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 <span>History</span>
             </button>
-            <button id="logout-btn" class="bg-slate-800/80 hover:bg-rose-600 hover:text-white text-rose-400 border border-slate-700/70 hover:border-rose-500/50 text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer hover:shadow-[0_0_12px_rgba(225,29,72,0.4)] active:scale-95">
+            <button id="logout-btn" class="bg-slate-800/80 hover:bg-rose-600 hover:text-white text-rose-400 border border-slate-700/70 hover:border-rose-500/50 text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer hover:shadow-[0_0_12px_rgba(225,29,72,0.4)] active:scale-95">
                 <span>Logout</span>
             </button>
         </div>
@@ -78,8 +78,8 @@
         <p class="text-[10px] text-rose-300/80 mt-0.5">Borrowing disabled until items are cleared at the Return Shelf.</p>
     </div>
 
-    <!-- MAIN APP CONTAINER (Fits inside viewport without outer scrolling) -->
-    <main class="flex-1 min-h-0 p-3 sm:p-4 max-w-md mx-auto w-full flex flex-col gap-2 overflow-hidden">
+    <!-- MAIN APP CONTAINER -->
+    <main class="flex-1 min-h-0 p-2.5 sm:p-4 max-w-md mx-auto w-full flex flex-col gap-2 overflow-hidden">
 
         <!-- 1. Active Checkouts Prominently at Top -->
         <div id="active-checkouts-section" class="shrink-0 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-2.5 shadow-xl backdrop-blur-md">
@@ -99,42 +99,42 @@
             <!-- Search Bar -->
             <div class="relative">
                 <input type="text" id="shelf-search-input" placeholder="Search tools, equipment, or codes..."
-                       class="w-full bg-slate-900/80 border border-slate-800 focus:border-blue-500/80 rounded-2xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-inner">
-                <svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       class="w-full bg-slate-900/80 border border-slate-800 focus:border-blue-500/80 rounded-2xl pl-8 pr-3 py-1.5 sm:py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-inner">
+                <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
             </div>
 
             <!-- Dynamic Category Pills with Counts -->
-            <div id="category-filters" class="flex p-1 bg-slate-900/90 border border-slate-800/80 rounded-2xl gap-1 overflow-x-auto no-scrollbar text-[11px]">
-                <button data-type="ALL" class="filter-btn active-filter flex-1 bg-blue-600 text-white px-2.5 py-1.5 rounded-xl font-bold whitespace-nowrap shadow-md shadow-blue-600/30 transition-all flex items-center justify-center gap-1 cursor-pointer">
+            <div id="category-filters" class="flex p-1 bg-slate-900/90 border border-slate-800/80 rounded-2xl gap-1 overflow-x-auto no-scrollbar text-[10px] sm:text-[11px]">
+                <button data-type="ALL" class="filter-btn active-filter flex-1 bg-blue-600 text-white px-2 py-1 rounded-xl font-bold whitespace-nowrap shadow-md shadow-blue-600/30 transition-all flex items-center justify-center gap-1 cursor-pointer">
                     <span>All</span>
-                    <span id="count-all" class="text-[9px] bg-white/20 text-white px-1.5 py-0.2 rounded-full font-mono">0</span>
+                    <span id="count-all" class="text-[8px] bg-white/20 text-white px-1.5 py-0.2 rounded-full font-mono">0</span>
                 </button>
-                <button data-type="Equipment" class="filter-btn flex-1 text-slate-400 hover:text-slate-200 px-2.5 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all flex items-center justify-center gap-1 cursor-pointer">
+                <button data-type="Equipment" class="filter-btn flex-1 text-slate-400 hover:text-slate-200 px-2 py-1 rounded-xl font-semibold whitespace-nowrap transition-all flex items-center justify-center gap-1 cursor-pointer">
                     <span>Equipment</span>
-                    <span id="count-equipment" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded-full font-mono">0</span>
+                    <span id="count-equipment" class="text-[8px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded-full font-mono">0</span>
                 </button>
-                <button data-type="Tool" class="filter-btn flex-1 text-slate-400 hover:text-slate-200 px-2.5 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all flex items-center justify-center gap-1 cursor-pointer">
+                <button data-type="Tool" class="filter-btn flex-1 text-slate-400 hover:text-slate-200 px-2 py-1 rounded-xl font-semibold whitespace-nowrap transition-all flex items-center justify-center gap-1 cursor-pointer">
                     <span>Tools</span>
-                    <span id="count-tool" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded-full font-mono">0</span>
+                    <span id="count-tool" class="text-[8px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded-full font-mono">0</span>
                 </button>
-                <button data-type="Component" class="filter-btn flex-1 text-slate-400 hover:text-slate-200 px-2.5 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all flex items-center justify-center gap-1 cursor-pointer">
+                <button data-type="Component" class="filter-btn flex-1 text-slate-400 hover:text-slate-200 px-2 py-1 rounded-xl font-semibold whitespace-nowrap transition-all flex items-center justify-center gap-1 cursor-pointer">
                     <span>Components</span>
-                    <span id="count-component" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded-full font-mono">0</span>
+                    <span id="count-component" class="text-[8px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded-full font-mono">0</span>
                 </button>
             </div>
         </div>
 
         <!-- 3. Digital Shelf Scroll Container (ONLY THIS SECTION SCROLLS) -->
-        <div id="shelf-wrapper" class="flex-1 min-h-0 overflow-y-auto py-1 pr-0.5 no-scrollbar">
-            <div id="shelf-grid" class="grid grid-cols-2 gap-2.5 pb-4">
+        <div id="shelf-wrapper" class="flex-1 min-h-0 overflow-y-auto px-0.5 pt-1 pb-2 no-scrollbar">
+            <div id="shelf-grid" class="grid grid-cols-2 gap-2 sm:gap-2.5 pb-20">
                 <p class="col-span-2 text-xs text-slate-500 italic text-center py-10">Loading available tools...</p>
             </div>
         </div>
 
         <!-- 4. Fixed Context Notice Box -->
-        <div id="feedback-card" class="shrink-0 bg-blue-950/30 border border-blue-900/40 rounded-2xl p-2 text-center backdrop-blur-md shadow-lg">
+        <div id="feedback-card" class="shrink-0 bg-blue-950/40 border border-blue-900/50 rounded-2xl p-2 text-center backdrop-blur-md shadow-lg">
             <p class="text-[10px] font-bold text-blue-300 flex items-center justify-center gap-1.5">
                 <svg class="w-3.5 h-3.5 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <span>5-Minute Counter Pickup Window</span>
@@ -143,7 +143,7 @@
         </div>
 
         <!-- Fixed Footer -->
-        <footer class="shrink-0 text-center border-t border-slate-900/80 pt-1.5 pb-0.5">
+        <footer class="shrink-0 text-center border-t border-slate-900/80 pt-1 pb-0.5">
             <p class="text-[9px] text-slate-600 font-medium">Ateneo de Davao University • FUSEE EE Lab System</p>
         </footer>
     </main>

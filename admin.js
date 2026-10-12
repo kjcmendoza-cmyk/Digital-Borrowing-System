@@ -870,7 +870,7 @@ exportCsvBtn.addEventListener('click', async () => {
             if (isOverdue) totalOverdue++;
         });
 
-        // Excel XML Header with Gridlines and Formatting Settings
+        // Built sequentially WITHOUT <thead> so Google Sheets maintains exact row sequence
         let html = `
             <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
             <head>
@@ -883,123 +883,69 @@ exportCsvBtn.addEventListener('click', async () => {
                                 <x:Name>PAASCU Borrowing Logbook</x:Name>
                                 <x:WorksheetOptions>
                                     <x:DisplayGridlines/>
-                                    <x:Print>
-                                        <x:ValidPrinterInfo/>
-                                        <x:HorizontalResolution>600</x:HorizontalResolution>
-                                        <x:VerticalResolution>600</x:VerticalResolution>
-                                    </x:Print>
                                 </x:WorksheetOptions>
                             </x:ExcelWorksheet>
                         </x:ExcelWorksheets>
                     </x:ExcelWorkbook>
                 </xml>
                 <![endif]-->
-                <style>
-                    body { font-family: 'Segoe UI', Arial, sans-serif; color: #1E293B; background-color: #FFFFFF; }
-                    table { border-collapse: collapse; margin-bottom: 30px; width: 100%; table-layout: fixed; }
-                    th, td { border: 1px solid #CBD5E1; padding: 8px 12px; font-size: 10pt; vertical-align: middle; white-space: nowrap; }
-                    
-                    /* Institutional Header */
-                    .univ-title { font-size: 16pt; font-weight: bold; color: #0F2C59; border: none !important; padding-bottom: 2px; }
-                    .dept-title { font-size: 11pt; font-weight: 600; color: #475569; border: none !important; padding-bottom: 2px; }
-                    .doc-title { font-size: 12pt; font-weight: bold; color: #1E3A8A; border: none !important; padding-bottom: 6px; }
-                    .meta-info { font-size: 9pt; color: #64748B; border: none !important; padding-bottom: 14px; }
-                    .blank-row { border: none !important; background-color: transparent !important; height: 12px; }
-                    
-                    /* Executive KPI Card Table */
-                    .kpi-table { border: 1px solid #94A3B8; border-collapse: collapse; margin-bottom: 20px; }
-                    .kpi-header { background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; }
-                    .kpi-label { font-size: 9pt; font-weight: 600; color: #475569; background-color: #F8FAFC; text-align: center; }
-                    .kpi-value { font-size: 14pt; font-weight: bold; color: #0F2C59; background-color: #FFFFFF; text-align: center; }
-                    .kpi-value-active { font-size: 14pt; font-weight: bold; color: #1D4ED8; background-color: #EFF6FF; text-align: center; }
-                    .kpi-value-returned { font-size: 14pt; font-weight: bold; color: #15803D; background-color: #F0FDF4; text-align: center; }
-                    .kpi-value-overdue { font-size: 14pt; font-weight: bold; color: #B91C1C; background-color: #FEF2F2; text-align: center; }
-
-                    /* Data Table Header */
-                    .tbl-header th { background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; }
-                    
-                    /* Row Shading */
-                    .row-even { background-color: #FFFFFF; }
-                    .row-odd { background-color: #F8FAFC; }
-                    
-                    /* Cell Formatting Utilities */
-                    .txt-code { font-family: 'Consolas', 'Courier New', monospace; mso-number-format: "\\@"; text-align: center; }
-                    .txt-center { text-align: center; }
-                    .txt-left { text-align: left; }
-                    .txt-bold { font-weight: bold; }
-
-                    /* PAASCU Audit Status Badges */
-                    .badge-active { background-color: #DBEAFE; color: #1E40AF; font-weight: bold; text-align: center; border-radius: 4px; }
-                    .badge-returned { background-color: #DCFCE7; color: #15803D; font-weight: bold; text-align: center; border-radius: 4px; }
-                    .badge-pending { background-color: #FEF3C7; color: #B45309; font-weight: bold; text-align: center; border-radius: 4px; }
-                    .badge-overdue { background-color: #FEE2E2; color: #B91C1C; font-weight: bold; text-align: center; border-radius: 4px; }
-                    .badge-ontime { background-color: #F1F5F9; color: #475569; text-align: center; border-radius: 4px; }
-                </style>
             </head>
-            <body>
-                <table>
-                    <colgroup>
-                        <col style="width: 130px;" />
-                        <col style="width: 220px;" />
-                        <col style="width: 140px;" />
-                        <col style="width: 180px;" />
-                        <col style="width: 240px;" />
-                        <col style="width: 120px;" />
-                        <col style="width: 200px;" />
-                        <col style="width: 110px;" />
-                        <col style="width: 160px;" />
-                        <col style="width: 160px;" />
-                        <col style="width: 160px;" />
-                        <col style="width: 130px;" />
-                        <col style="width: 220px;" />
-                    </colgroup>
+            <body style="font-family: Arial, sans-serif;">
+                <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: collapse; width: 100%;">
                     
-                    <!-- INSTITUTIONAL PAASCU ACCREDITATION HEADER -->
-                    <tr><td colspan="13" class="univ-title">ATENEO DE DAVAO UNIVERSITY</td></tr>
-                    <tr><td colspan="13" class="dept-title">School of Engineering & Architecture — Electrical Engineering Department</td></tr>
-                    <tr><td colspan="13" class="doc-title">OFFICIAL LABORATORY ASSET & BORROWING LOGBOOK (PAASCU AUDIT REPORT)</td></tr>
-                    <tr><td colspan="13" class="meta-info">Report Generated: <strong>${dateTag} at ${timeTag}</strong> | Generated By: <strong>${escapeHtml(generatedBy)}</strong> | Operating Hours: Open ${labOperatingHours.open_time || '08:00'} - Close ${closeTimeString}</td></tr>
-                    
-                    <tr class="blank-row"><td colspan="13"></td></tr>
-
-                    <!-- EXECUTIVE KPI METRICS BLOCK -->
-                    <tr class="kpi-header">
-                        <td colspan="3">TOTAL RECORDS LOGGED</td>
-                        <td colspan="3">CURRENTLY ACTIVE / IN-USE</td>
-                        <td colspan="3">COMPLETED RETURNS</td>
-                        <td colspan="4">OVERDUE INCIDENTS</td>
+                    <!-- 1. INSTITUTIONAL HEADER (ROWS 1-4) -->
+                    <tr>
+                        <td colspan="13" style="font-size: 16pt; font-weight: bold; color: #0F2C59; padding: 6px 0 2px 0; border: none;">ATENEO DE DAVAO UNIVERSITY</td>
                     </tr>
                     <tr>
-                        <td colspan="3" class="kpi-value">${records.length}</td>
-                        <td colspan="3" class="kpi-value-active">${totalActive}</td>
-                        <td colspan="3" class="kpi-value-returned">${totalReturned}</td>
-                        <td colspan="4" class="kpi-value-overdue">${totalOverdue}</td>
+                        <td colspan="13" style="font-size: 11pt; font-weight: bold; color: #475569; padding-bottom: 2px; border: none;">School of Engineering & Architecture — Electrical Engineering Laboratory</td>
+                    </tr>
+                    <tr>
+                        <td colspan="13" style="font-size: 12pt; font-weight: bold; color: #1E3A8A; padding-bottom: 6px; border: none;">PAASCU ACCREDITATION LOGBOOK & BORROWING MONITORING REPORT</td>
+                    </tr>
+                    <tr>
+                        <td colspan="13" style="font-size: 9.5pt; color: #64748B; font-style: italic; padding-bottom: 16px; border: none;">Generated On: <strong>${dateTag} at ${timeTag}</strong> | Generated By: <strong>${escapeHtml(generatedBy)}</strong> | Operating Hours: Open ${labOperatingHours.open_time || '08:00'} - Close ${closeTimeString}</td>
+                    </tr>
+                    
+                    <!-- BLANK ROW -->
+                    <tr><td colspan="13" style="height: 12px; border: none;"></td></tr>
+
+                    <!-- 2. EXECUTIVE KPI CARDS BLOCK (ROWS 6-7) -->
+                    <tr>
+                        <td colspan="3" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 6px;">TOTAL RECORDS LOGGED</td>
+                        <td colspan="3" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 6px;">CURRENTLY ACTIVE / IN-USE</td>
+                        <td colspan="3" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 6px;">COMPLETED RETURNS</td>
+                        <td colspan="4" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 6px;">OVERDUE INCIDENTS</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" style="font-size: 14pt; font-weight: bold; color: #0F2C59; background-color: #F8FAFC; text-align: center; border: 1px solid #CBD5E1; padding: 8px;">${records.length}</td>
+                        <td colspan="3" style="font-size: 14pt; font-weight: bold; color: #1D4ED8; background-color: #EFF6FF; text-align: center; border: 1px solid #CBD5E1; padding: 8px;">${totalActive}</td>
+                        <td colspan="3" style="font-size: 14pt; font-weight: bold; color: #15803D; background-color: #F0FDF4; text-align: center; border: 1px solid #CBD5E1; padding: 8px;">${totalReturned}</td>
+                        <td colspan="4" style="font-size: 14pt; font-weight: bold; color: #B91C1C; background-color: #FEF2F2; text-align: center; border: 1px solid #CBD5E1; padding: 8px;">${totalOverdue}</td>
                     </tr>
 
-                    <tr class="blank-row"><td colspan="13"></td></tr>
+                    <!-- BLANK ROW -->
+                    <tr><td colspan="13" style="height: 16px; border: none;"></td></tr>
 
-                    <!-- MAIN LOGBOOK TABLE HEADERS -->
-                    <thead>
-                        <tr class="tbl-header">
-                            <th style="width: 130px;">Record ID</th>
-                            <th style="width: 220px;">Equipment / Asset Name</th>
-                            <th style="width: 140px;">Asset Tag / QR</th>
-                            <th style="width: 180px;">Borrower Name</th>
-                            <th style="width: 240px;">AdDU Institutional Email</th>
-                            <th style="width: 120px;">Student ID</th>
-                            <th style="width: 200px;">Program / Course</th>
-                            <th style="width: 110px;">Year Level</th>
-                            <th style="width: 160px;">Time Checked Out</th>
-                            <th style="width: 160px;">Time Returned</th>
-                            <th style="width: 160px;">Borrow Status</th>
-                            <th style="width: 130px;">Overdue Status</th>
-                            <th style="width: 220px;">Condition / Audit Notes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                    <!-- 3. MAIN DATA TABLE HEADER (INLINE STYLED WITHOUT TH/THEAD) -->
+                    <tr style="background-color: #0F2C59;">
+                        <td style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 140px; min-width: 140px;">Record ID</td>
+                        <td style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 200px; min-width: 200px;">Equipment / Asset Name</td>
+                        <td style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 140px; min-width: 140px;">Asset Tag / QR</td>
+                        <td style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 180px; min-width: 180px;">Borrower Name</td>
+                        <td style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 240px; min-width: 240px;">AdDU Institutional Email</td>
+                        <td style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 120px; min-width: 120px;">Student ID</td>
+                        <td style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 200px; min-width: 200px;">Program / Course</td>
+                        <td style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 110px; min-width: 110px;">Year Level</td>
+                        <td style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 180px; min-width: 180px;">Time Checked Out</td>
+                        <td style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 180px; min-width: 180px;">Time Returned</td>
+                        <td style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 160px; min-width: 160px;">Borrow Status</td>
+                        <td style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 140px; min-width: 140px;">Overdue Status</td>
+                        <td style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 220px; min-width: 220px;">Condition / Audit Notes</td>
+                    </tr>
         `;
 
-        // DATA ROWS WITH ALTERNATING ROW SHADING
+        // DATA ROWS WITH DIRECT INLINE STYLING
         records.forEach((rec, idx) => {
             const student = usersCache[rec.student_uid] || usersCache[rec.student_email] || {};
             const studentName = student.name || rec.student_name || 'Student Account';
@@ -1035,39 +981,52 @@ exportCsvBtn.addEventListener('click', async () => {
             }
 
             let displayStatus = rec.status || 'UNKNOWN';
-            let statusClass = 'badge-active';
-            if (rec.status === 'BORROWED') { displayStatus = 'Checked Out'; statusClass = 'badge-active'; }
-            else if (rec.status === 'REQUESTED') { displayStatus = 'Awaiting Pickup'; statusClass = 'badge-pending'; }
-            else if (rec.status === 'STAGED') { displayStatus = 'Pending Inspection'; statusClass = 'badge-pending'; }
-            else if (rec.status === 'RETURNED') { displayStatus = 'Returned'; statusClass = 'badge-returned'; }
-            else if (rec.status === 'RETURNED_DAMAGED') { displayStatus = 'Returned (Damaged)'; statusClass = 'badge-overdue'; }
+            let statusStyle = 'background-color: #DBEAFE; color: #1E40AF; font-weight: bold; text-align: center; border: 1px solid #CBD5E1;';
+            if (rec.status === 'BORROWED') { 
+                displayStatus = 'Checked Out'; 
+                statusStyle = 'background-color: #DBEAFE; color: #1E40AF; font-weight: bold; text-align: center; border: 1px solid #CBD5E1;'; 
+            } else if (rec.status === 'REQUESTED') { 
+                displayStatus = 'Awaiting Pickup'; 
+                statusStyle = 'background-color: #FEF3C7; color: #B45309; font-weight: bold; text-align: center; border: 1px solid #CBD5E1;'; 
+            } else if (rec.status === 'STAGED') { 
+                displayStatus = 'Pending Inspection'; 
+                statusStyle = 'background-color: #FEF3C7; color: #B45309; font-weight: bold; text-align: center; border: 1px solid #CBD5E1;'; 
+            } else if (rec.status === 'RETURNED') { 
+                displayStatus = 'Returned'; 
+                statusStyle = 'background-color: #DCFCE7; color: #15803D; font-weight: bold; text-align: center; border: 1px solid #CBD5E1;'; 
+            } else if (rec.status === 'RETURNED_DAMAGED') { 
+                displayStatus = 'Returned (Damaged)'; 
+                statusStyle = 'background-color: #FEE2E2; color: #B91C1C; font-weight: bold; text-align: center; border: 1px solid #CBD5E1;'; 
+            }
 
             const overdueText = isOverdue ? 'OVERDUE' : 'On Time';
-            const overdueClass = isOverdue ? 'badge-overdue' : 'badge-ontime';
-            const notes = rec.damage_notes || rec.condition || 'Good Condition';
-            const rowClass = idx % 2 === 0 ? 'row-even' : 'row-odd';
+            const overdueStyle = isOverdue 
+                ? 'background-color: #FEE2E2; color: #B91C1C; font-weight: bold; text-align: center; border: 1px solid #CBD5E1;' 
+                : 'background-color: #F1F5F9; color: #475569; text-align: center; border: 1px solid #CBD5E1;';
+
+            const bgRow = idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
+            const cellBase = `padding: 8px 10px; font-size: 9.5pt; color: #1E293B; border: 1px solid #CBD5E1; background-color: ${bgRow};`;
 
             html += `
-                <tr class="${rowClass}">
-                    <td class="txt-code" style="width: 130px;">${escapeHtml(rec.id)}</td>
-                    <td class="txt-bold txt-left" style="width: 220px;">${escapeHtml(rec.asset_name || 'N/A')}</td>
-                    <td class="txt-code" style="width: 140px;">${escapeHtml(rec.qr_code_str || 'N/A')}</td>
-                    <td class="txt-left" style="width: 180px;">${escapeHtml(studentName)}</td>
-                    <td class="txt-left" style="width: 240px;">${escapeHtml(rec.student_email || 'N/A')}</td>
-                    <td class="txt-code" style="width: 120px;">${escapeHtml(studentId)}</td>
-                    <td class="txt-left" style="width: 200px;">${escapeHtml(program)}</td>
-                    <td class="txt-center" style="width: 110px;">${escapeHtml(yearLevel)}</td>
-                    <td class="txt-center" style="width: 160px;">${escapeHtml(checkedOutTime)}</td>
-                    <td class="txt-center" style="width: 160px;">${escapeHtml(returnedTime)}</td>
-                    <td class="${statusClass}" style="width: 160px;">${escapeHtml(displayStatus)}</td>
-                    <td class="${overdueClass}" style="width: 130px;">${escapeHtml(overdueText)}</td>
-                    <td class="txt-left" style="width: 220px;">${escapeHtml(notes)}</td>
+                <tr>
+                    <td style="${cellBase} font-family: monospace; text-align: center; mso-number-format: '\\@';">${escapeHtml(rec.id)}</td>
+                    <td style="${cellBase} font-weight: bold; text-align: left;">${escapeHtml(rec.asset_name || 'N/A')}</td>
+                    <td style="${cellBase} font-family: monospace; text-align: center; mso-number-format: '\\@';">${escapeHtml(rec.qr_code_str || 'N/A')}</td>
+                    <td style="${cellBase} text-align: left;">${escapeHtml(studentName)}</td>
+                    <td style="${cellBase} text-align: left;">${escapeHtml(rec.student_email || 'N/A')}</td>
+                    <td style="${cellBase} font-family: monospace; text-align: center; mso-number-format: '\\@';">${escapeHtml(studentId)}</td>
+                    <td style="${cellBase} text-align: left;">${escapeHtml(program)}</td>
+                    <td style="${cellBase} text-align: center;">${escapeHtml(yearLevel)}</td>
+                    <td style="${cellBase} text-align: center;">${escapeHtml(checkedOutTime)}</td>
+                    <td style="${cellBase} text-align: center;">${escapeHtml(returnedTime)}</td>
+                    <td style="${statusStyle}">${escapeHtml(displayStatus)}</td>
+                    <td style="${overdueStyle}">${escapeHtml(overdueText)}</td>
+                    <td style="${cellBase} text-align: left;">${escapeHtml(rec.damage_notes || rec.condition || 'Good Condition')}</td>
                 </tr>
             `;
         });
 
         html += `
-                    </tbody>
                 </table>
             </body>
             </html>

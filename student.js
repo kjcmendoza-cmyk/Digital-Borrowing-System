@@ -5,14 +5,15 @@ import {
     signOut 
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 import { 
-    getFirestore, 
+    getFirestore,
     enableIndexedDbPersistence,
-    collection, 
-    doc, 
+    collection,
+    doc,
     getDocs,
-    query, 
-    where, 
-    runTransaction, 
+    updateDoc, 
+    query,
+    where,
+    runTransaction,
     serverTimestamp,
     onSnapshot
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
@@ -246,6 +247,7 @@ function listenToActiveCheckouts(uid) {
         activeCheckoutsList.innerHTML = '';
         snapshot.forEach((docSnap) => {
             const record = docSnap.data();
+            const recordId = docSnap.id;
             const card = document.createElement('div');
             card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-3 flex justify-between items-center text-xs shadow-md";
             
@@ -260,7 +262,11 @@ function listenToActiveCheckouts(uid) {
                     </div>
                 `;
             } else {
-                statusHtml = `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">Checked Out</span>`;
+                statusHtml = `
+                    <button class="return-btn bg-amber-600 hover:bg-amber-500 text-white font-bold text-[10px] px-3 py-1.5 rounded-xl shadow-md transition cursor-pointer">
+                        Return Item
+                    </button>
+                `;
             }
 
             card.innerHTML = `
@@ -270,6 +276,11 @@ function listenToActiveCheckouts(uid) {
                 </div>
                 ${statusHtml}
             `;
+
+            if (record.status === 'BORROWED') {
+                card.querySelector('.return-btn').addEventListener('click', () => stageReturn(recordId, record.asset_name));
+            }
+
             activeCheckoutsList.appendChild(card);
         });
 
@@ -279,6 +290,20 @@ function listenToActiveCheckouts(uid) {
             studentTimerInterval = setInterval(updateStudentTimers, 1000);
         }
     });
+}
+
+async function stageReturn(recordId, assetName) {
+    if (!confirm(`Are you sure you want to return ${assetName} to the Return Shelf?`)) return;
+
+    try {
+        await updateDoc(doc(db, "borrow_records", recordId), {
+            status: 'STAGED',
+            staged_at: serverTimestamp()
+        });
+        alert(`"${assetName}" staged for return! Please place it on the Return Shelf for admin inspection.`);
+    } catch (err) {
+        alert("Failed to return item: " + err.message);
+    }
 }
 
 function updateStudentTimers() {

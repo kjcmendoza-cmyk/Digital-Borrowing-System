@@ -85,6 +85,17 @@
                     <option value="BS Robotics Engineering">BS Robotics Engineering</option>
                 </select>
             </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Year Level</label>
+                <select id="reg-year-level" required class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="" disabled selected>Select year level...</option>
+                    <option value="1st Year">1st Year</option>
+                    <option value="2nd Year">2nd Year</option>
+                    <option value="3rd Year">3rd Year</option>
+                    <option value="4th Year">4th Year</option>
+                    <option value="5th Year">5th Year</option>
+                </select>
+            </div>
         </div>
 
         <!-- Google OAuth Sign-in Button -->
@@ -144,9 +155,11 @@
                 const idInput = document.getElementById('reg-id-number').value.trim();
                 const courseSelect = document.getElementById('reg-course');
                 const courseInput = courseSelect ? courseSelect.value : '';
+                const yearSelect = document.getElementById('reg-year-level');
+                const yearInput = yearSelect ? yearSelect.value : '';
 
-                if (!nameInput || !idInput || !courseInput) {
-                    throw new Error("Please enter your Full Name, ID Number, and select a Course before signing in.");
+                if (!nameInput || !idInput || !courseInput || !yearInput) {
+                    throw new Error("Please enter your Full Name, ID Number, select a Course, and select a Year Level before signing in.");
                 }
 
                 loadingMsg.classList.remove('hidden');
@@ -169,6 +182,7 @@
                         name: nameInput,
                         id_number: idInput,
                         course: courseInput,
+                        year_level: yearInput,
                         role: 'student',
                         is_on_hold: false,
                         createdAt: new Date().toISOString()
@@ -178,7 +192,8 @@
                     await setDoc(userRef, {
                         name: nameInput,
                         id_number: idInput,
-                        course: courseInput
+                        course: courseInput,
+                        year_level: yearInput
                     }, { merge: true });
                     const userData = userSnap.data();
                     window.location.href = userData.role === 'admin' ? 'admin.html' : 'student.html';

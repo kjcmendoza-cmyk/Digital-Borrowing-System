@@ -57,6 +57,7 @@ const confirmCheckoutBtn = document.getElementById('confirm-checkout-btn');
 
 // App State
 let currentUser = null;
+let userProfile = null; // Add this line here
 let currentSelectedAsset = null;
 let isUserOnHold = false;
 let availableAssets = [];
@@ -75,8 +76,8 @@ onAuthStateChanged(auth, async (user) => {
 
     onSnapshot(doc(db, "users", user.uid), (userSnap) => {
         if (userSnap.exists()) {
-            const userData = userSnap.data();
-            isUserOnHold = userData.is_on_hold || false;
+            userProfile = userSnap.data(); // Stores full profile (name, course, year_level)
+            isUserOnHold = userProfile.is_on_hold || false;
 
             if (isUserOnHold) {
                 accountLockedAlert.classList.remove('hidden');
@@ -221,13 +222,15 @@ async function submitBorrowRequest(assetId) {
             qr_code_str: assetData.qr_code_str,
             student_uid: currentUser.uid,
             student_email: currentUser.email,
+            student_name: (userProfile && userProfile.name) ? userProfile.name : 'Student Account',
+            student_course: (userProfile && userProfile.course) ? userProfile.course : 'AdDU Student',
+            student_year_level: (userProfile && userProfile.year_level) ? userProfile.year_level : '1st Year',
             requested_at: serverTimestamp(),
             status: 'REQUESTED',
             checklist_verified: true
         });
     });
 }
-
 let studentTimerInterval = null;
 
 // ACTIVE CHECKOUTS & LIVE PICKUP TIMER

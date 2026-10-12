@@ -807,7 +807,7 @@ damageForm.addEventListener('submit', async (e) => {
     }
 });
 
-// EXPORT VISUALLY STYLED EXCEL REPORT (.xls)
+// EXPORT VISUALLY STYLED EXCEL REPORT (.xls) - GOOGLE SHEETS & EXCEL COMPATIBLE
 exportCsvBtn.addEventListener('click', async () => {
     try {
         const snap = await getDocs(collection(db, "borrow_records"));
@@ -841,7 +841,7 @@ exportCsvBtn.addEventListener('click', async () => {
         const dateTag = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         const timeTag = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-        // Generate Styled HTML Table string formatted for Excel / Google Sheets
+        // Generate Styled HTML Table string formatted for Google Sheets & Excel
         let html = `
             <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
             <head>
@@ -862,12 +862,12 @@ exportCsvBtn.addEventListener('click', async () => {
                 <![endif]-->
                 <style>
                     body { font-family: 'Segoe UI', Arial, sans-serif; }
-                    table { border-collapse: collapse; }
+                    table { border-collapse: collapse; table-layout: auto; }
                     th, td { border: 1px solid #CBD5E1; padding: 10px 14px; text-align: left; font-size: 10pt; vertical-align: middle; }
                     .header-banner th { background-color: #1E3A8A; color: #FFFFFF; font-weight: bold; font-size: 10.5pt; text-align: center; border: 1px solid #1E3A8A; }
-                    .inst-title { font-size: 15pt; font-weight: bold; color: #1E3A8A; padding-bottom: 4px; }
-                    .inst-sub { font-size: 12pt; font-weight: bold; color: #334155; padding-bottom: 4px; }
-                    .inst-meta { font-size: 9.5pt; color: #64748B; font-style: italic; padding-bottom: 12px; }
+                    .inst-title { font-size: 15pt; font-weight: bold; color: #1E3A8A; padding-bottom: 4px; text-align: left; }
+                    .inst-sub { font-size: 12pt; font-weight: bold; color: #334155; padding-bottom: 4px; text-align: left; }
+                    .inst-meta { font-size: 9.5pt; color: #64748B; font-style: italic; padding-bottom: 12px; text-align: left; }
                     .badge-returned { background-color: #DCFCE7; color: #166534; font-weight: bold; text-align: center; }
                     .badge-overdue { background-color: #FEE2E2; color: #991B1B; font-weight: bold; text-align: center; }
                     .badge-active { background-color: #DBEAFE; color: #1E40AF; font-weight: bold; text-align: center; }
@@ -878,43 +878,28 @@ exportCsvBtn.addEventListener('click', async () => {
             </head>
             <body>
                 <table>
-                    <!-- Explicit Column Widths for immediate clean spacing -->
-                    <col style="width: 160px;" />
-                    <col style="width: 150px;" />
-                    <col style="width: 130px;" />
-                    <col style="width: 170px;" />
-                    <col style="width: 230px;" />
-                    <col style="width: 140px;" />
-                    <col style="width: 200px;" />
-                    <col style="width: 110px;" />
-                    <col style="width: 160px;" />
-                    <col style="width: 160px;" />
-                    <col style="width: 150px;" />
-                    <col style="width: 130px;" />
-                    <col style="width: 160px;" />
-
-                    <!-- 1. INSTITUTIONAL HEADER AT THE TOP -->
+                    <!-- 1. INSTITUTIONAL HEADER AT THE VERY TOP -->
                     <tr><td colspan="13" class="inst-title" style="border:none;">ATENEO DE DAVAO UNIVERSITY - ELECTRICAL ENGINEERING LABORATORY</td></tr>
                     <tr><td colspan="13" class="inst-sub" style="border:none;">ACTIVE BORROWINGS & LIVE MONITORING REPORT</td></tr>
                     <tr><td colspan="13" class="inst-meta" style="border:none;">Generated On: ${dateTag} at ${timeTag} | Lab Operating Hours: Open ${labOperatingHours.open_time || '08:00'} - Close ${closeTimeString}</td></tr>
-                    <tr><td colspan="13" style="border:none; height: 10px;"></td></tr>
+                    <tr><td colspan="13" style="border:none; height: 12px;"></td></tr>
 
-                    <!-- 2. TABLE HEADERS -->
+                    <!-- 2. TABLE HEADERS WITH EXPLICIT HTML WIDTH ATTRIBUTES FOR GOOGLE SHEETS -->
                     <thead>
                         <tr class="header-banner">
-                            <th style="width: 160px;">Record ID</th>
-                            <th style="width: 150px;">Asset Name</th>
-                            <th style="width: 130px;">Asset Tag / QR</th>
-                            <th style="width: 170px;">Borrower Name</th>
-                            <th style="width: 230px;">AdDU Email</th>
-                            <th style="width: 140px;">Student ID</th>
-                            <th style="width: 200px;">Program / Course</th>
-                            <th style="width: 110px;">Year Level</th>
-                            <th style="width: 160px;">Time Checked Out</th>
-                            <th style="width: 160px;">Time Returned</th>
-                            <th style="width: 150px;">Borrowing Status</th>
-                            <th style="width: 130px;">Overdue Status</th>
-                            <th style="width: 160px;">Condition / Notes</th>
+                            <th width="180">Record ID</th>
+                            <th width="160">Asset Name</th>
+                            <th width="140">Asset Tag / QR</th>
+                            <th width="180">Borrower Name</th>
+                            <th width="240">AdDU Email</th>
+                            <th width="150">Student ID</th>
+                            <th width="220">Program / Course</th>
+                            <th width="120">Year Level</th>
+                            <th width="180">Time Checked Out</th>
+                            <th width="180">Time Returned</th>
+                            <th width="160">Borrowing Status</th>
+                            <th width="140">Overdue Status</th>
+                            <th width="180">Condition / Notes</th>
                         </tr>
                     </thead>
                     <tbody>

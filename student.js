@@ -9,13 +9,13 @@ import {
     enableIndexedDbPersistence,
     collection, 
     doc, 
+    getDocs,
     query, 
     where, 
     runTransaction, 
     serverTimestamp,
     onSnapshot
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
-
 // Firebase Config
 const firebaseConfig = {
     apiKey: "AIzaSyAjkdbUSY5yTqWmDVGWL_RSC0p2KbI49Rg",
@@ -227,6 +227,8 @@ async function submitBorrowRequest(assetId) {
     });
 }
 
+let studentTimerInterval = null;
+
 // ACTIVE CHECKOUTS & LIVE PICKUP TIMER
 function listenToActiveCheckouts(uid) {
     const q = query(
@@ -250,14 +252,11 @@ function listenToActiveCheckouts(uid) {
             let statusHtml = '';
             if (record.status === 'REQUESTED') {
                 const requestedTime = record.requested_at?.toDate ? record.requested_at.toDate().getTime() : Date.now();
-                const remainingSecs = Math.max(0, Math.floor((requestedTime + PICKUP_WINDOW_MS - Date.now()) / 1000));
-                const mins = Math.floor(remainingSecs / 60);
-                const secs = remainingSecs % 60;
 
                 statusHtml = `
                     <div class="text-right">
                         <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-950 text-amber-400 border border-amber-800 animate-pulse">Awaiting Pickup</span>
-                        <p class="text-[10px] text-amber-300 font-mono mt-1 font-bold">⏱ ${mins}m ${secs < 10 ? '0' : ''}${secs}s left</p>
+                        <p class="text-[10px] text-amber-300 font-mono mt-1 font-bold student-timer-cell" data-requested-at="${requestedTime}">⏱ Calculating...</p>
                     </div>
                 `;
             } else {
@@ -273,6 +272,26 @@ function listenToActiveCheckouts(uid) {
             `;
             activeCheckoutsList.appendChild(card);
         });
+
+        // Run immediately and ensure interval is running
+        updateStudentTimers();
+        if (!studentTimerInterval) {
+            studentTimerInterval = setInterval(updateStudentTimers, 1000);
+        }
+    });
+}
+
+function updateStudentTimers() {
+    const timerCells = document.querySelectorAll('.student-timer-cell');
+    const now = Date.now();
+
+    timerCells.forEach(cell => {
+        const requestedTime = parseInt(cell.getAttribute('data-requested-at'), 10);
+        const remainingSecs = Math.max(0, Math.floor((requestedTime + PICKUP_WINDOW_MS - now) / 1000));
+        const mins = Math.floor(remainingSecs / 60);
+        const secs = remainingSecs % 60;
+
+        cell.textContent = `⏱ ${mins}m ${secs < 10 ? '0' : ''}${secs}s left`;
     });
 }
 
@@ -280,3 +299,72 @@ function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]);
 }
+
+// BORROWING HISTORY LOG MODAL HANDLERS
+const openHistoryBtn = document.getElementById('open-history-btn');
+const historyModal = document.getElementById('history-modal');
+const historyList = document.getElementById('history-list');
+const closeHistoryModalBtn = document.getElementById('close-history-modal-btn');
+
+openHistoryBtn.addEventListener('click', async () => {
+    historyModal.classList.remove('hidden');
+    historyList.innerHTML = `<p class="text-xs text-slate-500 italic text-center py-4">Loading borrowing history...</p>`;
+
+    try {
+        const q = query(
+            collection(db, "borrow_records"),
+            where("student_uid", "==", currentUser.uid)
+        );
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+            historyList.innerHTML = `<p class="text-xs text-slate-500 italic text-center py-4">No past borrowing history found.</p>`;
+            return;
+        }
+
+        const records = [];
+        snap.forEach(d => records.push({ id: d.id, ...d.data() }));
+
+        const pastRecords = records
+            .filter(r => r.status !== 'BORROWED' && r.status !== 'REQUESTED')
+            .sort((a, b) => (b.requested_at || 0) - (a.requested_at || 0));
+
+        if (pastRecords.length === 0) {
+            historyList.innerHTML = `<p class="text-xs text-slate-500 italic text-center py-4">No past returned records found.</p>`;
+            return;
+        }
+
+        historyList.innerHTML = '';
+        pastRecords.forEach(rec => {
+            const dateStr = rec.borrowed_at?.toDate ? rec.borrowed_at.toDate().toLocaleDateString() : 'Recent';
+            let badgeHtml = '';
+
+            if (rec.status === 'STAGED') {
+                badgeHtml = `<span class="bg-amber-900/60 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-700/50">Staged Return</span>`;
+            } else if (rec.status === 'RETURNED' && rec.condition === 'GOOD') {
+                badgeHtml = `<span class="bg-emerald-950 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-800">Returned (Good)</span>`;
+            } else if (rec.condition === 'DAMAGED') {
+                badgeHtml = `<span class="bg-rose-950 text-rose-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-rose-800">Returned (Damaged)</span>`;
+            } else {
+                badgeHtml = `<span class="bg-slate-800 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded-full">${escapeHtml(rec.status)}</span>`;
+            }
+
+            const item = document.createElement('div');
+            item.className = "bg-slate-950 border border-slate-800 rounded-2xl p-3 flex justify-between items-center text-xs";
+            item.innerHTML = `
+                <div>
+                    <p class="font-bold text-slate-200">${escapeHtml(rec.asset_name)}</p>
+                    <p class="text-[10px] text-slate-500 font-mono">${escapeHtml(rec.qr_code_str)} • ${dateStr}</p>
+                </div>
+                <div>${badgeHtml}</div>
+            `;
+            historyList.appendChild(item);
+        });
+
+    } catch (err) {
+        console.error("History fetch error:", err);
+        historyList.innerHTML = `<p class="text-xs text-rose-400 text-center py-4">Failed to load history.</p>`;
+    }
+});
+
+closeHistoryModalBtn.addEventListener('click', () => historyModal.classList.add('hidden'));

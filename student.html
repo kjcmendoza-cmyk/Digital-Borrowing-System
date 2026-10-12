@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -28,18 +28,18 @@
         }
     </style>
 </head>
-<body class="bg-slate-950 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(59,130,246,0.15),rgba(255,255,255,0))] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-blue-600 selection:text-white pb-6">
+<body class="bg-slate-950 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(59,130,246,0.15),rgba(255,255,255,0))] text-slate-100 h-screen h-[100dvh] max-h-screen overflow-hidden flex flex-col font-sans selection:bg-blue-600 selection:text-white">
 
     <!-- Sticky Offline Banner -->
-    <div id="offline-banner" class="hidden sticky top-0 z-50 bg-gradient-to-r from-amber-600 to-orange-600 text-white text-xs font-bold px-4 py-2 text-center shadow-lg flex items-center justify-center gap-2">
+    <div id="offline-banner" class="hidden shrink-0 bg-gradient-to-r from-amber-600 to-orange-600 text-white text-xs font-bold px-4 py-2 text-center shadow-lg flex items-center justify-center gap-2 z-50">
         <svg class="w-4 h-4 animate-bounce shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m-12.728 0a9 9 0 010-12.728m2.828 2.828a6 6 0 018.486 0m-8.486 8.486a6 6 0 010-8.486m2.828 2.828a2 2 0 012.828 0"></path>
         </svg>
         <span>Offline Mode: Scans will sync automatically when connected.</span>
     </div>
 
-    <!-- Header / Navbar -->
-    <header class="bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/60 px-3.5 sm:px-5 py-3 sticky top-0 z-40 flex justify-between items-center gap-2 shadow-2xl shadow-black/40">
+    <!-- Header / Navbar (Fixed Viewport Top) -->
+    <header class="bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/60 px-3.5 sm:px-5 py-2.5 shrink-0 z-40 flex justify-between items-center gap-2 shadow-2xl shadow-black/40">
         <!-- Left Section: Logo & User Information -->
         <div class="flex items-center gap-3 min-w-0 flex-1">
             <div class="p-1 rounded-xl bg-slate-800/60 border border-slate-700/50 shadow-inner shrink-0">
@@ -68,100 +68,100 @@
     </header>
 
     <!-- ACCOUNT LOCKED ALERT -->
-    <div id="account-locked-alert" class="hidden bg-rose-950/80 border-b border-rose-800/80 p-4 text-center z-20 backdrop-blur-md">
-        <div class="flex items-center justify-center gap-2 text-rose-200 font-bold text-sm">
-            <svg class="w-5 h-5 text-rose-400 animate-pulse shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div id="account-locked-alert" class="hidden bg-rose-950/80 border-b border-rose-800/80 p-3 text-center shrink-0 z-20 backdrop-blur-md">
+        <div class="flex items-center justify-center gap-2 text-rose-200 font-bold text-xs">
+            <svg class="w-4 h-4 text-rose-400 animate-pulse shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
             </svg>
             <span>Account Locked: Please return overdue items.</span>
         </div>
-        <p class="text-xs text-rose-300/80 mt-1">Borrowing disabled until items are cleared at the Return Shelf.</p>
+        <p class="text-[10px] text-rose-300/80 mt-0.5">Borrowing disabled until items are cleared at the Return Shelf.</p>
     </div>
 
-    <!-- MAIN APP CONTAINER -->
-    <main class="flex-1 p-3.5 sm:p-4 max-w-md mx-auto w-full flex flex-col gap-4">
+    <!-- MAIN APP CONTAINER (Strict 100% Height Non-Scrolling Viewport) -->
+    <main class="flex-1 min-h-0 p-3 sm:p-4 max-w-md mx-auto w-full flex flex-col gap-2.5 overflow-hidden">
 
-        <!-- 1. Active Checkouts Prominently at Top -->
-        <div id="active-checkouts-section" class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3.5 shadow-xl backdrop-blur-md">
-            <div class="flex items-center justify-between mb-2.5">
-                <h2 class="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">My Active Checkouts</h2>
-                <span class="text-[10px] text-emerald-400 font-mono flex items-center gap-1.5 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.15)]">
+        <!-- 1. Active Checkouts Prominently at Top (Fixed Height Component) -->
+        <div id="active-checkouts-section" class="shrink-0 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3 shadow-xl backdrop-blur-md">
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">My Active Checkouts</h2>
+                <span class="text-[9px] text-emerald-400 font-mono flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.15)]">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live Sync
                 </span>
             </div>
-            <div id="active-checkouts-list" class="space-y-2">
+            <div id="active-checkouts-list" class="space-y-2 max-h-28 overflow-y-auto no-scrollbar">
                 <p class="text-xs text-slate-500 italic text-center py-2">Loading active borrowings...</p>
             </div>
         </div>
 
-        <!-- 2. Sticky Search & Filter Header -->
-        <div class="sticky top-[57px] z-30 bg-slate-950/80 backdrop-blur-xl py-3 space-y-2.5 border-b border-slate-800/50">
+        <!-- 2. Search & Filter Header (Fixed Component) -->
+        <div class="shrink-0 space-y-2">
             <!-- Search Bar -->
             <div class="relative">
                 <input type="text" id="shelf-search-input" placeholder="Search tools, equipment, or codes..."
-                       class="w-full bg-slate-900/80 border border-slate-800 focus:border-blue-500/80 rounded-2xl pl-9 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-500/15 transition-all shadow-inner">
-                <svg class="w-4 h-4 text-slate-500 absolute left-3 top-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       class="w-full bg-slate-900/80 border border-slate-800 focus:border-blue-500/80 rounded-2xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-inner">
+                <svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
             </div>
 
             <!-- Dynamic Category Pills with Counts -->
             <div id="category-filters" class="flex p-1 bg-slate-900/90 border border-slate-800/80 rounded-2xl gap-1 overflow-x-auto no-scrollbar text-[11px]">
-                <button data-type="ALL" class="filter-btn active-filter flex-1 bg-blue-600 text-white px-3 py-1.5 rounded-xl font-bold whitespace-nowrap shadow-md shadow-blue-600/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-                    <span>All Items</span>
+                <button data-type="ALL" class="filter-btn active-filter flex-1 bg-blue-600 text-white px-2.5 py-1.5 rounded-xl font-bold whitespace-nowrap shadow-md shadow-blue-600/30 transition-all flex items-center justify-center gap-1 cursor-pointer">
+                    <span>All</span>
                     <span id="count-all" class="text-[9px] bg-white/20 text-white px-1.5 py-0.2 rounded-full font-mono">0</span>
                 </button>
-                <button data-type="Equipment" class="filter-btn flex-1 text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                <button data-type="Equipment" class="filter-btn flex-1 text-slate-400 hover:text-slate-200 px-2.5 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all flex items-center justify-center gap-1 cursor-pointer">
                     <span>Equipment</span>
                     <span id="count-equipment" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded-full font-mono">0</span>
                 </button>
-                <button data-type="Tool" class="filter-btn flex-1 text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                <button data-type="Tool" class="filter-btn flex-1 text-slate-400 hover:text-slate-200 px-2.5 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all flex items-center justify-center gap-1 cursor-pointer">
                     <span>Tools</span>
                     <span id="count-tool" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded-full font-mono">0</span>
                 </button>
-                <button data-type="Component" class="filter-btn flex-1 text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                <button data-type="Component" class="filter-btn flex-1 text-slate-400 hover:text-slate-200 px-2.5 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all flex items-center justify-center gap-1 cursor-pointer">
                     <span>Components</span>
                     <span id="count-component" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded-full font-mono">0</span>
                 </button>
             </div>
         </div>
 
-        <!-- 3. Digital Shelf Grid -->
-        <div id="shelf-wrapper" class="mt-1">
-            <div id="shelf-grid" class="grid grid-cols-2 gap-3 min-h-[200px]">
-                <p class="col-span-2 text-xs text-slate-500 italic text-center py-12">Loading available tools...</p>
+        <!-- 3. Digital Shelf Grid (ONLY THIS AREA SCROLLS IF ITEMS OVERFLOW) -->
+        <div id="shelf-wrapper" class="flex-1 overflow-y-auto min-h-0 pr-0.5 no-scrollbar">
+            <div id="shelf-grid" class="grid grid-cols-2 gap-2.5">
+                <p class="col-span-2 text-xs text-slate-500 italic text-center py-10">Loading available tools...</p>
             </div>
         </div>
 
-        <!-- Compact Context Instructions Notice -->
-        <div id="feedback-card" class="bg-blue-950/30 border border-blue-900/40 rounded-2xl p-3.5 text-center backdrop-blur-md mt-2 shadow-lg">
-            <p class="text-xs font-bold text-blue-300 flex items-center justify-center gap-1.5">
-                <svg class="w-4 h-4 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <!-- 4. Compact Context Instructions Notice (Fixed at Bottom) -->
+        <div id="feedback-card" class="shrink-0 bg-blue-950/30 border border-blue-900/40 rounded-2xl p-2.5 text-center backdrop-blur-md shadow-lg">
+            <p class="text-[11px] font-bold text-blue-300 flex items-center justify-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <span>5-Minute Counter Pickup Window</span>
             </p>
-            <p class="text-[11px] text-slate-400 mt-0.5">Select an item from the shelf above and claim it at the counter within 5 minutes.</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Select an item above and claim it at the counter within 5 minutes.</p>
         </div>
 
-        <!-- Footer -->
-        <footer class="mt-3 text-center border-t border-slate-900/80 pt-4">
-            <p class="text-[11px] text-slate-600 font-medium">Ateneo de Davao University • FUSEE EE Lab System</p>
+        <!-- Footer (Fixed Bottom) -->
+        <footer class="shrink-0 text-center border-t border-slate-900/80 pt-2 pb-1">
+            <p class="text-[10px] text-slate-600 font-medium">Ateneo de Davao University • FUSEE EE Lab System</p>
         </footer>
     </main>
 
     <!-- Borrowing History Log Modal -->
     <div id="history-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 hidden z-50 transition-opacity">
-        <div class="bg-slate-900 border-t sm:border border-slate-800/90 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 text-white shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+        <div class="bg-slate-900 border-t sm:border border-slate-800/90 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 text-white shadow-2xl space-y-3 max-h-[85vh] flex flex-col">
             <!-- Mobile Grab Handle -->
             <div class="w-12 h-1.5 bg-slate-700/60 rounded-full mx-auto sm:hidden mb-1"></div>
             
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
                 <div>
-                    <h3 class="text-base font-extrabold text-slate-100">Borrowing History</h3>
-                    <p class="text-[11px] text-slate-400">Past returns & inspected items</p>
+                    <h3 class="text-sm sm:text-base font-extrabold text-slate-100">Borrowing History</h3>
+                    <p class="text-[10px] text-slate-400">Past returns & inspected items</p>
                 </div>
                 <button id="close-history-modal-btn" class="text-slate-400 hover:text-white text-2xl font-bold p-1 transition cursor-pointer">&times;</button>
             </div>
-            <div id="history-list" class="flex-1 overflow-y-auto space-y-2.5 pr-1 no-scrollbar">
+            <div id="history-list" class="flex-1 overflow-y-auto space-y-2 pr-1 no-scrollbar">
                 <p class="text-xs text-slate-500 italic text-center py-4">Loading borrowing history...</p>
             </div>
         </div>
@@ -169,36 +169,36 @@
 
     <!-- Touch-Friendly Checklist Selection Modal -->
     <div id="checklist-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 hidden z-50 transition-opacity">
-        <div class="bg-slate-900 border-t sm:border border-slate-800/90 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 text-white shadow-2xl space-y-4">
+        <div class="bg-slate-900 border-t sm:border border-slate-800/90 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 text-white shadow-2xl space-y-3 max-h-[90vh] overflow-y-auto no-scrollbar">
             <!-- Mobile Grab Handle -->
             <div class="w-12 h-1.5 bg-slate-700/60 rounded-full mx-auto sm:hidden mb-1"></div>
 
-            <div class="border-b border-slate-800/80 pb-3">
-                <span class="text-[9px] font-extrabold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20">
+            <div class="border-b border-slate-800/80 pb-2.5">
+                <span class="text-[9px] font-extrabold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
                     Confirm Equipment Pickup
                 </span>
-                <h3 id="modal-asset-name" class="text-base sm:text-lg font-black text-white mt-2">--</h3>
-                <p id="modal-asset-qr" class="text-xs text-slate-400 font-mono mt-0.5"></p>
+                <h3 id="modal-asset-name" class="text-sm sm:text-base font-black text-white mt-1.5">--</h3>
+                <p id="modal-asset-qr" class="text-[10px] text-slate-400 font-mono mt-0.5"></p>
             </div>
 
             <div>
-                <p class="text-[11px] font-extrabold text-slate-400 mb-2 uppercase tracking-wider">Required Checklist Verification:</p>
-                <div id="checklist-items" class="space-y-2">
-                    <label class="checklist-card flex items-center gap-3 p-3 bg-slate-950/60 border border-slate-800/80 rounded-2xl hover:border-blue-500/40 transition cursor-pointer group select-none">
+                <p class="text-[10px] font-extrabold text-slate-400 mb-1.5 uppercase tracking-wider">Required Checklist Verification:</p>
+                <div id="checklist-items" class="space-y-1.5">
+                    <label class="checklist-card flex items-center gap-2.5 p-2.5 bg-slate-950/60 border border-slate-800/80 rounded-2xl hover:border-blue-500/40 transition cursor-pointer group select-none">
                         <input type="checkbox" class="accessory-checkbox h-4 w-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500/40 accent-blue-600 shrink-0">
                         <div class="flex-1">
                             <p class="text-xs font-bold text-slate-200 group-hover:text-white transition">All probes / test leads attached</p>
                             <p class="text-[10px] text-slate-400">Verify accessories are complete</p>
                         </div>
                     </label>
-                    <label class="checklist-card flex items-center gap-3 p-3 bg-slate-950/60 border border-slate-800/80 rounded-2xl hover:border-blue-500/40 transition cursor-pointer group select-none">
+                    <label class="checklist-card flex items-center gap-2.5 p-2.5 bg-slate-950/60 border border-slate-800/80 rounded-2xl hover:border-blue-500/40 transition cursor-pointer group select-none">
                         <input type="checkbox" class="accessory-checkbox h-4 w-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500/40 accent-blue-600 shrink-0">
                         <div class="flex-1">
                             <p class="text-xs font-bold text-slate-200 group-hover:text-white transition">Power cable included & intact</p>
                             <p class="text-[10px] text-slate-400">Check power connections</p>
                         </div>
                     </label>
-                    <label class="checklist-card flex items-center gap-3 p-3 bg-slate-950/60 border border-slate-800/80 rounded-2xl hover:border-blue-500/40 transition cursor-pointer group select-none">
+                    <label class="checklist-card flex items-center gap-2.5 p-2.5 bg-slate-950/60 border border-slate-800/80 rounded-2xl hover:border-blue-500/40 transition cursor-pointer group select-none">
                         <input type="checkbox" class="accessory-checkbox h-4 w-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500/40 accent-blue-600 shrink-0">
                         <div class="flex-1">
                             <p class="text-xs font-bold text-slate-200 group-hover:text-white transition">No physical damage</p>
@@ -208,13 +208,13 @@
                 </div>
             </div>
 
-            <p id="modal-error-msg" class="text-xs text-rose-400 font-semibold hidden bg-rose-950/40 border border-rose-900/50 p-2.5 rounded-xl text-center"></p>
+            <p id="modal-error-msg" class="text-xs text-rose-400 font-semibold hidden bg-rose-950/40 border border-rose-900/50 p-2 rounded-xl text-center"></p>
 
-            <div class="flex gap-3 pt-2">
-                <button id="cancel-checkout-btn" class="flex-1 py-3 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition cursor-pointer">
+            <div class="flex gap-2.5 pt-1">
+                <button id="cancel-checkout-btn" class="flex-1 py-2.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition cursor-pointer">
                     Cancel
                 </button>
-                <button id="confirm-checkout-btn" class="flex-1 py-3 text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl shadow-lg shadow-blue-600/30 transition cursor-pointer flex items-center justify-center gap-1.5 active:scale-[0.98]">
+                <button id="confirm-checkout-btn" class="flex-1 py-2.5 text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl shadow-lg shadow-blue-600/30 transition cursor-pointer flex items-center justify-center gap-1.5 active:scale-[0.98]">
                     <span>Confirm Request</span>
                 </button>
             </div>

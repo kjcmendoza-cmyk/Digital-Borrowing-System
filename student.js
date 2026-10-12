@@ -563,3 +563,141 @@ openHistoryBtn.addEventListener('click', async () => {
 });
 
 closeHistoryModalBtn.addEventListener('click', () => historyModal.classList.add('hidden'));
+
+// ============================================================
+// WELCOME SCREEN & OPERATIONAL SCHEDULE GATEKEEPER LOGIC
+// ============================================================
+const welcomeOverlay = document.getElementById('welcome-screen-overlay');
+const welcomeClockDisplay = document.getElementById('welcome-clock-display');
+const welcomeHoursDisplay = document.getElementById('welcome-hours-display');
+const welcomeStatusCard = document.getElementById('welcome-status-card');
+const welcomeActionWrapper = document.getElementById('welcome-action-wrapper');
+const welcomeBarAccent = document.getElementById('welcome-bar-accent');
+
+let currentOperatingHours = { open_time: "08:00", close_time: "17:00" };
+let isLabCurrentlyOpen = false;
+
+// 1. Live Clock Timer
+function updateWelcomeClock() {
+    const now = new Date();
+    if (welcomeClockDisplay) {
+        welcomeClockDisplay.textContent = now.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+    }
+    evaluateLabSchedule();
+}
+setInterval(updateWelcomeClock, 1000);
+updateWelcomeClock();
+
+// 2. Real-time Operating Hours Firestore Sync
+function listenToLabOperatingSchedule() {
+    const scheduleDocRef = doc(db, "settings", "operating_hours");
+    onSnapshot(scheduleDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            currentOperatingHours = docSnap.data();
+        }
+        evaluateLabSchedule();
+    }, (err) => {
+        console.warn("Schedule listener error, falling back to defaults:", err);
+        evaluateLabSchedule();
+    });
+}
+
+// 3. Evaluate Operating Hours & Enforce Lock Barrier
+function evaluateLabSchedule() {
+    if (!welcomeStatusCard || !welcomeActionWrapper) return;
+
+    const openStr = currentOperatingHours.open_time || "08:00";
+    const closeStr = currentOperatingHours.close_time || "17:00";
+
+    // Format display string (e.g. 08:00 AM - 05:00 PM)
+    if (welcomeHoursDisplay) {
+        welcomeHoursDisplay.textContent = `${format12HourTime(openStr)} - ${format12HourTime(closeStr)}`;
+    }
+
+    const now = new Date();
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+
+    const [openH, openM] = openStr.split(':').map(Number);
+    const [closeH, closeM] = closeStr.split(':').map(Number);
+
+    const openMins = openH * 60 + openM;
+    const closeMins = closeH * 60 + closeM;
+
+    // Check if current time is within operational hours
+    isLabCurrentlyOpen = currentMins >= openMins && currentMins < closeMins;
+
+    if (isLabCurrentlyOpen) {
+        // --- LABORATORY IS OPEN ---
+        welcomeStatusCard.className = "w-full p-4 rounded-2xl border border-emerald-500/30 bg-emerald-950/40 text-center backdrop-blur-md shadow-[0_0_20px_rgba(16,185,129,0.1)] mb-6";
+        welcomeStatusCard.innerHTML = `
+            <div class="flex items-center justify-center gap-2 mb-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <span class="text-xs font-black text-emerald-400 uppercase tracking-widest">Laboratory Currently Open</span>
+            </div>
+            <p class="text-[11px] text-emerald-200/80">Digital equipment borrowing counter is active and processing requests.</p>
+        `;
+
+        if (welcomeBarAccent) {
+            welcomeBarAccent.className = "absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500";
+        }
+
+        welcomeActionWrapper.innerHTML = `
+            <button id="enter-dashboard-btn" class="w-full py-3.5 px-6 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-wider text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-600/30 transition-all duration-300 cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2">
+                <span>Enter Digital Dashboard</span>
+                <svg class="w-4 h-4 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </button>
+        `;
+
+        // Attach event listener to allow entry
+        const enterBtn = document.getElementById('enter-dashboard-btn');
+        if (enterBtn) {
+            enterBtn.addEventListener('click', () => {
+                welcomeOverlay.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => welcomeOverlay.classList.add('hidden'), 500);
+            });
+        }
+
+    } else {
+        // --- LABORATORY IS CLOSED (DASHBOARD LOCKED) ---
+        welcomeStatusCard.className = "w-full p-4 rounded-2xl border border-rose-500/30 bg-rose-950/40 text-center backdrop-blur-md shadow-[0_0_20px_rgba(225,29,72,0.1)] mb-6";
+        welcomeStatusCard.innerHTML = `
+            <div class="flex items-center justify-center gap-2 mb-1">
+                <svg class="w-4 h-4 text-rose-400 animate-pulse shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m0-6h4m-2-4v4"/></svg>
+                <span class="text-xs font-black text-rose-400 uppercase tracking-widest">Laboratory Currently Closed</span>
+            </div>
+            <p class="text-[11px] text-rose-200/80">Dashboard access and tool borrowings are locked outside operational schedule.</p>
+        `;
+
+        if (welcomeBarAccent) {
+            welcomeBarAccent.className = "absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-rose-600 via-amber-500 to-rose-600";
+        }
+
+        welcomeActionWrapper.innerHTML = `
+            <div class="w-full py-3.5 px-6 rounded-2xl text-xs sm:text-sm font-bold uppercase tracking-wider text-rose-300/60 bg-rose-950/60 border border-rose-900/60 text-center select-none flex items-center justify-center gap-2">
+                <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m0-6h4m-2-4v4"/></svg>
+                <span>Dashboard Locked Outside Schedule</span>
+            </div>
+        `;
+
+        // Force overlay visible and un-dismissable
+        if (welcomeOverlay) {
+            welcomeOverlay.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+        }
+    }
+}
+
+function format12HourTime(timeStr) {
+    if (!timeStr) return '--:--';
+    const [h, m] = timeStr.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 || 12;
+    return `${hour12.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${period}`;
+}
+
+// Start schedule synchronization
+listenToLabOperatingSchedule();

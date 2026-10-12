@@ -198,70 +198,76 @@ function listenToActiveBorrowings() {
     if (!activeBorrowingsTbody) return;
 
     onSnapshot(collection(db, "borrow_records"), (snapshot) => {
-        if (snapshot.empty) {
-            activeBorrowingsTbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No active borrowings recorded.</td></tr>`;
-            return;
-        }
-
-        const records = [];
-        snapshot.forEach(d => {
-            const data = d.data();
-            // Filter records that are BORROWED, STAGED, RETURNED, or RETURNED_DAMAGED
-            if (['BORROWED', 'STAGED', 'RETURNED', 'RETURNED_DAMAGED'].includes(data.status)) {
-                records.push({ id: d.id, ...data });
+        try {
+            if (snapshot.empty) {
+                activeBorrowingsTbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No active borrowings recorded.</td></tr>`;
+                return;
             }
-        });
 
-        // Sort by most recent
-        records.sort((a, b) => {
-            const timeA = a.borrowed_at?.toDate ? a.borrowed_at.toDate().getTime() : 0;
-            const timeB = b.borrowed_at?.toDate ? b.borrowed_at.toDate().getTime() : 0;
-            return timeB - timeA;
-        });
+            const records = [];
+            snapshot.forEach(d => {
+                const data = d.data();
+                if (['BORROWED', 'STAGED', 'RETURNED', 'RETURNED_DAMAGED', 'REQUESTED'].includes(data.status)) {
+                    records.push({ id: d.id, ...data });
+                }
+            });
 
-        if (records.length === 0) {
-            activeBorrowingsTbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No active borrowings recorded.</td></tr>`;
-            return;
+            if (records.length === 0) {
+                activeBorrowingsTbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No active borrowings recorded.</td></tr>`;
+                return;
+            }
+
+            // Sort by most recent
+            records.sort((a, b) => {
+                const timeA = a.borrowed_at?.toDate ? a.borrowed_at.toDate().getTime() : (a.requested_at?.toDate ? a.requested_at.toDate().getTime() : 0);
+                const timeB = b.borrowed_at?.toDate ? b.borrowed_at.toDate().getTime() : (b.requested_at?.toDate ? b.requested_at.toDate().getTime() : 0);
+                return timeB - timeA;
+            });
+
+            activeBorrowingsTbody.innerHTML = '';
+            records.forEach(rec => {
+                // Student details lookup from cache or fallbacks
+                const student = usersCache[rec.student_uid] || usersCache[rec.student_email] || {};
+                const studentName = student.name || rec.student_name || 'Student Account';
+                const program = student.course || student.program || 'AdDU Student';
+                const yearLevel = student.year_level || student.year || 'Undergraduate';
+
+                // Safe Time Formatting
+                const checkedOutTime = rec.borrowed_at?.toDate 
+                    ? rec.borrowed_at.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+                    : (rec.requested_at?.toDate ? rec.requested_at.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Pending');
+
+                const returnedTime = (rec.status === 'RETURNED' || rec.status === 'RETURNED_DAMAGED') && rec.returned_at?.toDate
+                    ? rec.returned_at.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : '-';
+
+                const statusBadge = computeBorrowStatusBadge(rec);
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition";
+                tr.innerHTML = `
+                    <td class="p-3 font-semibold text-gray-900">${escapeHtml(rec.asset_name || 'N/A')}</td>
+                    <td class="p-3"><span class="bg-gray-100 text-gray-700 text-[11px] px-2 py-0.5 rounded-full font-medium">Equipment</span></td>
+                    <td class="p-3 font-medium text-gray-900">${escapeHtml(studentName)}</td>
+                    <td class="p-3 font-mono text-gray-600 text-xs">${escapeHtml(rec.student_email || 'N/A')}</td>
+                    <td class="p-3">
+                        <div class="font-bold text-gray-900 text-xs">${escapeHtml(program)}</div>
+                        <div class="text-[11px] text-gray-500 font-medium">${escapeHtml(yearLevel)}</div>
+                    </td>
+                    <td class="p-3 font-mono text-xs text-gray-700">${checkedOutTime}</td>
+                    <td class="p-3 font-mono text-xs text-gray-700">${returnedTime}</td>
+                    <td class="p-3 text-center">${statusBadge}</td>
+                `;
+
+                activeBorrowingsTbody.appendChild(tr);
+            });
+        } catch (err) {
+            console.error("Error rendering active borrowings:", err);
+            activeBorrowingsTbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-red-500 font-semibold text-xs">Error rendering records: ${escapeHtml(err.message)}</td></tr>`;
         }
-
-        activeBorrowingsTbody.innerHTML = '';
-        records.forEach(rec => {
-            // Student details lookup from usersCache
-            const student = usersCache[rec.student_uid] || usersCache[rec.student_email] || {};
-            const studentName = student.name || rec.student_name || 'N/A';
-            const program = student.course || student.program || 'N/A';
-            const yearLevel = student.year_level || student.year || '1st Year';
-
-            // Timestamps
-            const checkedOutTime = rec.borrowed_at?.toDate 
-                ? rec.borrowed_at.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-                : (rec.requested_at?.toDate ? rec.requested_at.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A');
-
-            const returnedTime = (rec.status === 'RETURNED' || rec.status === 'RETURNED_DAMAGED') && rec.returned_at?.toDate
-                ? rec.returned_at.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : '-';
-
-            // Calculate Status: Checked Out, Returned, or Overdue
-            const statusBadge = computeBorrowStatusBadge(rec);
-
-            const tr = document.createElement('tr');
-            tr.className = "hover:bg-gray-50 transition";
-            tr.innerHTML = `
-                <td class="p-3 font-semibold text-gray-900">${escapeHtml(rec.asset_name)}</td>
-                <td class="p-3"><span class="bg-gray-100 text-gray-700 text-[11px] px-2 py-0.5 rounded-full font-medium">Equipment</span></td>
-                <td class="p-3 font-medium text-gray-900">${escapeHtml(studentName)}</td>
-                <td class="p-3 font-mono text-gray-600 text-xs">${escapeHtml(rec.student_email)}</td>
-                <td class="p-3">
-                    <div class="font-bold text-gray-900 text-xs">${escapeHtml(program)}</div>
-                    <div class="text-[11px] text-gray-500 font-medium">${escapeHtml(yearLevel)}</div>
-                </td>
-                <td class="p-3 font-mono text-xs text-gray-700">${checkedOutTime}</td>
-                <td class="p-3 font-mono text-xs text-gray-700">${returnedTime}</td>
-                <td class="p-3 text-center">${statusBadge}</td>
-            `;
-
-            activeBorrowingsTbody.appendChild(tr);
-        });
+    }, (error) => {
+        console.error("Firestore active borrowings snapshot error:", error);
+        activeBorrowingsTbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-red-500 font-semibold text-xs">Database error: ${escapeHtml(error.message)}</td></tr>`;
     });
 }
 
@@ -270,16 +276,25 @@ function computeBorrowStatusBadge(record) {
         return `<span class="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full font-bold">Returned</span>`;
     }
 
-    // Check if overdue based on current time & lab closing time setting
-    const now = new Date();
-    const [closeHour, closeMin] = (labOperatingHours.close_time || "17:00").split(':').map(Number);
-    const closingTimeToday = new Date();
-    closingTimeToday.setHours(closeHour, closeMin, 0, 0);
+    try {
+        const now = new Date();
+        const closeTimeString = labOperatingHours?.close_time || "17:00";
+        const timeParts = closeTimeString.split(':');
+        const closeHour = parseInt(timeParts[0], 10) || 17;
+        const closeMin = parseInt(timeParts[1], 10) || 0;
 
-    const isPastClosing = now > closingTimeToday;
+        const closingTimeToday = new Date();
+        closingTimeToday.setHours(closeHour, closeMin, 0, 0);
 
-    if (isPastClosing && (record.status === 'BORROWED' || record.status === 'STAGED')) {
-        return `<span class="bg-red-100 text-red-800 text-xs px-2.5 py-1 rounded-full font-bold animate-pulse">Overdue</span>`;
+        if (now > closingTimeToday && (record.status === 'BORROWED' || record.status === 'STAGED')) {
+            return `<span class="bg-red-100 text-red-800 text-xs px-2.5 py-1 rounded-full font-bold animate-pulse">Overdue</span>`;
+        }
+    } catch (e) {
+        console.warn("Overdue calculation fallback:", e);
+    }
+
+    if (record.status === 'REQUESTED') {
+        return `<span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold">Requested</span>`;
     }
 
     return `<span class="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-bold">Checked Out</span>`;

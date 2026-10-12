@@ -870,7 +870,6 @@ exportCsvBtn.addEventListener('click', async () => {
             if (isOverdue) totalOverdue++;
         });
 
-        // Built with explicit <colgroup> BEFORE <tr> so Google Sheets establishes wide columns automatically
         let html = `
             <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
             <head>
@@ -890,44 +889,44 @@ exportCsvBtn.addEventListener('click', async () => {
                 </xml>
                 <![endif]-->
             </head>
-            <body style="font-family: Arial, sans-serif;">
-                <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
+                <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: collapse; table-layout: fixed; width: 2470px;">
                     
-                    <!-- EXPLICIT COLUMN WIDTH DECLARATION BEFORE ANY TR (PREVENTS SQUISHED COLUMNS IN GOOGLE SHEETS) -->
-                    <colgroup>
-                        <col width="160" style="width: 160px;" />
-                        <col width="220" style="width: 220px;" />
-                        <col width="150" style="width: 150px;" />
-                        <col width="200" style="width: 200px;" />
-                        <col width="260" style="width: 260px;" />
-                        <col width="140" style="width: 140px;" />
-                        <col width="220" style="width: 220px;" />
-                        <col width="120" style="width: 120px;" />
-                        <col width="180" style="width: 180px;" />
-                        <col width="180" style="width: 180px;" />
-                        <col width="160" style="width: 160px;" />
-                        <col width="140" style="width: 140px;" />
-                        <col width="240" style="width: 240px;" />
-                    </colgroup>
-                    
-                    <!-- 1. INSTITUTIONAL HEADER -->
+                    <!-- ROW 1: DUMMY SIZING ROW THAT FORCES GOOGLE SHEETS TO ASSIGN WIDE COLUMNS (PREVENTS TEXT CLIPPING) -->
+                    <tr style="height: 1px; font-size: 1px; line-height: 1px;">
+                        <td width="180" style="width: 180px; height: 1px; padding: 0; border: none;">&nbsp;</td>
+                        <td width="220" style="width: 220px; height: 1px; padding: 0; border: none;">&nbsp;</td>
+                        <td width="150" style="width: 150px; height: 1px; padding: 0; border: none;">&nbsp;</td>
+                        <td width="200" style="width: 200px; height: 1px; padding: 0; border: none;">&nbsp;</td>
+                        <td width="280" style="width: 280px; height: 1px; padding: 0; border: none;">&nbsp;</td>
+                        <td width="130" style="width: 130px; height: 1px; padding: 0; border: none;">&nbsp;</td>
+                        <td width="220" style="width: 220px; height: 1px; padding: 0; border: none;">&nbsp;</td>
+                        <td width="120" style="width: 120px; height: 1px; padding: 0; border: none;">&nbsp;</td>
+                        <td width="180" style="width: 180px; height: 1px; padding: 0; border: none;">&nbsp;</td>
+                        <td width="180" style="width: 180px; height: 1px; padding: 0; border: none;">&nbsp;</td>
+                        <td width="150" style="width: 150px; height: 1px; padding: 0; border: none;">&nbsp;</td>
+                        <td width="140" style="width: 140px; height: 1px; padding: 0; border: none;">&nbsp;</td>
+                        <td width="230" style="width: 230px; height: 1px; padding: 0; border: none;">&nbsp;</td>
+                    </tr>
+
+                    <!-- INSTITUTIONAL ACCREDITATION HEADER -->
                     <tr>
-                        <td colspan="13" width="100%" style="font-size: 16pt; font-weight: bold; color: #0F2C59; padding: 8px 0 2px 0; border: none; white-space: normal;">ATENEO DE DAVAO UNIVERSITY</td>
+                        <td colspan="13" style="font-size: 16pt; font-weight: bold; color: #0F2C59; padding: 10px 0 2px 8px; border: none; white-space: normal;">ATENEO DE DAVAO UNIVERSITY</td>
                     </tr>
                     <tr>
-                        <td colspan="13" width="100%" style="font-size: 11pt; font-weight: bold; color: #475569; padding-bottom: 2px; border: none; white-space: normal;">School of Engineering & Architecture — Electrical Engineering Laboratory</td>
+                        <td colspan="13" style="font-size: 11pt; font-weight: bold; color: #475569; padding: 0 0 2px 8px; border: none; white-space: normal;">School of Engineering & Architecture — Electrical Engineering Laboratory</td>
                     </tr>
                     <tr>
-                        <td colspan="13" width="100%" style="font-size: 12pt; font-weight: bold; color: #1E3A8A; padding-bottom: 6px; border: none; white-space: normal;">PAASCU ACCREDITATION LOGBOOK & BORROWING MONITORING REPORT</td>
+                        <td colspan="13" style="font-size: 12pt; font-weight: bold; color: #1E3A8A; padding: 0 0 6px 8px; border: none; white-space: normal;">PAASCU ACCREDITATION LOGBOOK & BORROWING MONITORING REPORT</td>
                     </tr>
                     <tr>
-                        <td colspan="13" width="100%" style="font-size: 9.5pt; color: #64748B; font-style: italic; padding-bottom: 16px; border: none; white-space: normal;">Generated On: <strong>${dateTag} at ${timeTag}</strong> | Generated By: <strong>${escapeHtml(generatedBy)}</strong> | Operating Hours: Open ${labOperatingHours.open_time || '08:00'} - Close ${closeTimeString}</td>
+                        <td colspan="13" style="font-size: 9.5pt; color: #64748B; font-style: italic; padding: 0 0 16px 8px; border: none; white-space: normal;">Generated On: <strong>${dateTag} at ${timeTag}</strong> | Generated By: <strong>${escapeHtml(generatedBy)}</strong> | Operating Hours: Open ${labOperatingHours.open_time || '08:00'} - Close ${closeTimeString}</td>
                     </tr>
                     
                     <!-- BLANK ROW -->
-                    <tr><td colspan="13" style="height: 14px; border: none;"></td></tr>
+                    <tr><td colspan="13" style="height: 12px; border: none;"></td></tr>
 
-                    <!-- 2. EXECUTIVE KPI CARDS BLOCK -->
+                    <!-- EXECUTIVE KPI CARDS -->
                     <tr>
                         <td colspan="3" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 8px;">TOTAL RECORDS LOGGED</td>
                         <td colspan="3" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 8px;">CURRENTLY ACTIVE / IN-USE</td>
@@ -944,25 +943,25 @@ exportCsvBtn.addEventListener('click', async () => {
                     <!-- BLANK ROW -->
                     <tr><td colspan="13" style="height: 16px; border: none;"></td></tr>
 
-                    <!-- 3. MAIN DATA TABLE HEADER -->
-                    <tr style="background-color: #0F2C59;">
-                        <td width="160" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 160px; white-space: normal;">Record ID</td>
-                        <td width="220" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 220px; white-space: normal;">Equipment / Asset Name</td>
-                        <td width="150" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 150px; white-space: normal;">Asset Tag / QR</td>
-                        <td width="200" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 200px; white-space: normal;">Borrower Name</td>
-                        <td width="260" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 260px; white-space: normal;">AdDU Institutional Email</td>
-                        <td width="140" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 140px; white-space: normal;">Student ID</td>
-                        <td width="220" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 220px; white-space: normal;">Program / Course</td>
-                        <td width="120" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 120px; white-space: normal;">Year Level</td>
-                        <td width="180" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 180px; white-space: normal;">Time Checked Out</td>
-                        <td width="180" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 180px; white-space: normal;">Time Returned</td>
-                        <td width="160" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 160px; white-space: normal;">Borrow Status</td>
-                        <td width="140" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 140px; white-space: normal;">Overdue Status</td>
-                        <td width="240" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 10pt; text-align: center; border: 1px solid #0F2C59; padding: 10px; width: 240px; white-space: normal;">Condition / Audit Notes</td>
+                    <!-- MAIN DATA TABLE HEADER WITH LINE BREAKS -->
+                    <tr style="background-color: #0F2C59; height: 42px;">
+                        <td width="180" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 8px; width: 180px; white-space: normal;">Record ID</td>
+                        <td width="220" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 8px; width: 220px; white-space: normal;">Equipment /<br>Asset Name</td>
+                        <td width="150" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 8px; width: 150px; white-space: normal;">Asset Tag /<br>QR Code</td>
+                        <td width="200" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 8px; width: 200px; white-space: normal;">Borrower Name</td>
+                        <td width="280" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 8px; width: 280px; white-space: normal;">AdDU Institutional<br>Email</td>
+                        <td width="130" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 8px; width: 130px; white-space: normal;">Student ID</td>
+                        <td width="220" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 8px; width: 220px; white-space: normal;">Program /<br>Course</td>
+                        <td width="120" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 8px; width: 120px; white-space: normal;">Year Level</td>
+                        <td width="180" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 8px; width: 180px; white-space: normal;">Time Checked<br>Out</td>
+                        <td width="180" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 8px; width: 180px; white-space: normal;">Time Returned</td>
+                        <td width="150" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 8px; width: 150px; white-space: normal;">Borrow Status</td>
+                        <td width="140" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 8px; width: 140px; white-space: normal;">Overdue Status</td>
+                        <td width="230" style="background-color: #0F2C59; color: #FFFFFF; font-weight: bold; font-size: 9.5pt; text-align: center; border: 1px solid #0F2C59; padding: 8px; width: 230px; white-space: normal;">Condition /<br>Audit Notes</td>
                     </tr>
         `;
 
-        // DATA ROWS WITH TEXT-WRAPPING AND EXPLICIT WIDTHS ON EVERY CELL
+        // DATA ROWS WITH EXPLICIT WRAPPING & LEFT ALIGNMENT FOR TEXT FIELDS
         records.forEach((rec, idx) => {
             const student = usersCache[rec.student_uid] || usersCache[rec.student_email] || {};
             const studentName = student.name || rec.student_name || 'Student Account';
@@ -1022,23 +1021,23 @@ exportCsvBtn.addEventListener('click', async () => {
                 : 'background-color: #F1F5F9; color: #475569; text-align: center; border: 1px solid #CBD5E1;';
 
             const bgRow = idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
-            const cellBase = `padding: 8px 10px; font-size: 9.5pt; color: #1E293B; border: 1px solid #CBD5E1; background-color: ${bgRow}; white-space: normal; word-wrap: break-word;`;
+            const baseCellStyle = `padding: 8px 10px; font-size: 9.5pt; color: #1E293B; border: 1px solid #CBD5E1; background-color: ${bgRow}; white-space: normal; word-wrap: break-word; word-break: break-all;`;
 
             html += `
                 <tr>
-                    <td width="160" style="${cellBase} font-family: monospace; text-align: center; width: 160px; mso-number-format: '\\@';">${escapeHtml(rec.id)}</td>
-                    <td width="220" style="${cellBase} font-weight: bold; text-align: left; width: 220px;">${escapeHtml(rec.asset_name || 'N/A')}</td>
-                    <td width="150" style="${cellBase} font-family: monospace; text-align: center; width: 150px; mso-number-format: '\\@';">${escapeHtml(rec.qr_code_str || 'N/A')}</td>
-                    <td width="200" style="${cellBase} text-align: left; width: 200px;">${escapeHtml(studentName)}</td>
-                    <td width="260" style="${cellBase} text-align: left; width: 260px;">${escapeHtml(rec.student_email || 'N/A')}</td>
-                    <td width="140" style="${cellBase} font-family: monospace; text-align: center; width: 140px; mso-number-format: '\\@';">${escapeHtml(studentId)}</td>
-                    <td width="220" style="${cellBase} text-align: left; width: 220px;">${escapeHtml(program)}</td>
-                    <td width="120" style="${cellBase} text-align: center; width: 120px;">${escapeHtml(yearLevel)}</td>
-                    <td width="180" style="${cellBase} text-align: center; width: 180px;">${escapeHtml(checkedOutTime)}</td>
-                    <td width="180" style="${cellBase} text-align: center; width: 180px;">${escapeHtml(returnedTime)}</td>
-                    <td width="160" style="${statusStyle} padding: 8px 10px; font-size: 9.5pt; width: 160px; white-space: normal;">${escapeHtml(displayStatus)}</td>
+                    <td width="180" style="${baseCellStyle} font-family: monospace; text-align: left; width: 180px; mso-number-format: '\\@';">${escapeHtml(rec.id)}</td>
+                    <td width="220" style="${baseCellStyle} font-weight: bold; text-align: left; width: 220px; word-break: break-word;">${escapeHtml(rec.asset_name || 'N/A')}</td>
+                    <td width="150" style="${baseCellStyle} font-family: monospace; text-align: center; width: 150px; mso-number-format: '\\@';">${escapeHtml(rec.qr_code_str || 'N/A')}</td>
+                    <td width="200" style="${baseCellStyle} text-align: left; width: 200px; word-break: break-word;">${escapeHtml(studentName)}</td>
+                    <td width="280" style="${baseCellStyle} text-align: left; width: 280px; word-break: break-all;">${escapeHtml(rec.student_email || 'N/A')}</td>
+                    <td width="130" style="${baseCellStyle} font-family: monospace; text-align: center; width: 130px; mso-number-format: '\\@';">${escapeHtml(studentId)}</td>
+                    <td width="220" style="${baseCellStyle} text-align: left; width: 220px; word-break: break-word;">${escapeHtml(program)}</td>
+                    <td width="120" style="${baseCellStyle} text-align: center; width: 120px;">${escapeHtml(yearLevel)}</td>
+                    <td width="180" style="${baseCellStyle} text-align: center; width: 180px;">${escapeHtml(checkedOutTime)}</td>
+                    <td width="180" style="${baseCellStyle} text-align: center; width: 180px;">${escapeHtml(returnedTime)}</td>
+                    <td width="150" style="${statusStyle} padding: 8px 10px; font-size: 9.5pt; width: 150px; white-space: normal;">${escapeHtml(displayStatus)}</td>
                     <td width="140" style="${overdueStyle} padding: 8px 10px; font-size: 9.5pt; width: 140px; white-space: normal;">${escapeHtml(overdueText)}</td>
-                    <td width="240" style="${cellBase} text-align: left; width: 240px;">${escapeHtml(rec.damage_notes || rec.condition || 'Good Condition')}</td>
+                    <td width="230" style="${baseCellStyle} text-align: left; width: 230px; word-break: break-word;">${escapeHtml(rec.damage_notes || rec.condition || 'Good Condition')}</td>
                 </tr>
             `;
         });

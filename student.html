@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en" class="h-full overflow-hidden">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -28,10 +28,10 @@
         }
     </style>
 </head>
-<body class="bg-slate-950 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(59,130,246,0.15),rgba(255,255,255,0))] text-slate-100 h-screen h-[100dvh] max-h-screen overflow-hidden flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+<body class="bg-slate-950 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(59,130,246,0.15),rgba(255,255,255,0))] text-slate-100 h-dvh max-h-dvh w-full overflow-hidden flex flex-col font-sans selection:bg-blue-600 selection:text-white">
 
     <!-- Sticky Offline Banner -->
-    <div id="offline-banner" class="hidden shrink-0 bg-gradient-to-r from-amber-600 to-orange-600 text-white text-xs font-bold px-4 py-2 text-center shadow-lg flex items-center justify-center gap-2 z-50">
+    <div id="offline-banner" class="hidden shrink-0 bg-gradient-to-r from-amber-600 to-orange-600 text-white text-xs font-bold px-4 py-1.5 text-center shadow-lg flex items-center justify-center gap-2 z-50">
         <svg class="w-4 h-4 animate-bounce shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m-12.728 0a9 9 0 010-12.728m2.828 2.828a6 6 0 018.486 0m-8.486 8.486a6 6 0 010-8.486m2.828 2.828a2 2 0 012.828 0"></path>
         </svg>
@@ -39,9 +39,9 @@
     </div>
 
     <!-- Header / Navbar (Fixed Viewport Top) -->
-    <header class="bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/60 px-3.5 sm:px-5 py-2.5 shrink-0 z-40 flex justify-between items-center gap-2 shadow-2xl shadow-black/40">
+    <header class="bg-slate-900/60 backdrop-blur-xl border-b border-slate-800/60 px-3.5 sm:px-5 py-2 shrink-0 z-40 flex justify-between items-center gap-2 shadow-2xl shadow-black/40">
         <!-- Left Section: Logo & User Information -->
-        <div class="flex items-center gap-3 min-w-0 flex-1">
+        <div class="flex items-center gap-2.5 min-w-0 flex-1">
             <div class="p-1 rounded-xl bg-slate-800/60 border border-slate-700/50 shadow-inner shrink-0">
                 <img src="fusee-logo.png" alt="FUSEE" class="h-6 sm:h-7 w-auto object-contain shrink-0 filter drop-shadow" 
                      onerror="if (this.src.endsWith('fusee-logo.png')) { this.src='fusee-logo.PNG'; } else if (this.src.endsWith('fusee-logo.PNG')) { this.src='FUSEE-logo.png'; } else { this.style.display='none'; }">
@@ -68,7 +68,7 @@
     </header>
 
     <!-- ACCOUNT LOCKED ALERT -->
-    <div id="account-locked-alert" class="hidden bg-rose-950/80 border-b border-rose-800/80 p-3 text-center shrink-0 z-20 backdrop-blur-md">
+    <div id="account-locked-alert" class="hidden bg-rose-950/80 border-b border-rose-800/80 p-2.5 text-center shrink-0 z-20 backdrop-blur-md">
         <div class="flex items-center justify-center gap-2 text-rose-200 font-bold text-xs">
             <svg class="w-4 h-4 text-rose-400 animate-pulse shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
@@ -78,24 +78,24 @@
         <p class="text-[10px] text-rose-300/80 mt-0.5">Borrowing disabled until items are cleared at the Return Shelf.</p>
     </div>
 
-    <!-- MAIN APP CONTAINER (Strict 100% Height Non-Scrolling Viewport) -->
-    <main class="flex-1 min-h-0 p-3 sm:p-4 max-w-md mx-auto w-full flex flex-col gap-2.5 overflow-hidden">
+    <!-- MAIN APP CONTAINER (Fits inside viewport without outer scrolling) -->
+    <main class="flex-1 min-h-0 p-3 sm:p-4 max-w-md mx-auto w-full flex flex-col gap-2 overflow-hidden">
 
-        <!-- 1. Active Checkouts Prominently at Top (Fixed Height Component) -->
-        <div id="active-checkouts-section" class="shrink-0 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3 shadow-xl backdrop-blur-md">
-            <div class="flex items-center justify-between mb-2">
+        <!-- 1. Active Checkouts Prominently at Top -->
+        <div id="active-checkouts-section" class="shrink-0 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-2.5 shadow-xl backdrop-blur-md">
+            <div class="flex items-center justify-between mb-1.5">
                 <h2 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">My Active Checkouts</h2>
                 <span class="text-[9px] text-emerald-400 font-mono flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.15)]">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live Sync
                 </span>
             </div>
-            <div id="active-checkouts-list" class="space-y-2 max-h-28 overflow-y-auto no-scrollbar">
+            <div id="active-checkouts-list" class="space-y-1.5 max-h-24 overflow-y-auto no-scrollbar">
                 <p class="text-xs text-slate-500 italic text-center py-2">Loading active borrowings...</p>
             </div>
         </div>
 
-        <!-- 2. Search & Filter Header (Fixed Component) -->
-        <div class="shrink-0 space-y-2">
+        <!-- 2. Fixed Search & Filter Header -->
+        <div class="shrink-0 space-y-1.5">
             <!-- Search Bar -->
             <div class="relative">
                 <input type="text" id="shelf-search-input" placeholder="Search tools, equipment, or codes..."
@@ -126,25 +126,25 @@
             </div>
         </div>
 
-        <!-- 3. Digital Shelf Grid (ONLY THIS AREA SCROLLS IF ITEMS OVERFLOW) -->
-        <div id="shelf-wrapper" class="flex-1 overflow-y-auto min-h-0 pr-0.5 no-scrollbar">
-            <div id="shelf-grid" class="grid grid-cols-2 gap-2.5">
+        <!-- 3. Digital Shelf Scroll Container (ONLY THIS SECTION SCROLLS) -->
+        <div id="shelf-wrapper" class="flex-1 min-h-0 overflow-y-auto py-1 pr-0.5 no-scrollbar">
+            <div id="shelf-grid" class="grid grid-cols-2 gap-2.5 pb-4">
                 <p class="col-span-2 text-xs text-slate-500 italic text-center py-10">Loading available tools...</p>
             </div>
         </div>
 
-        <!-- 4. Compact Context Instructions Notice (Fixed at Bottom) -->
-        <div id="feedback-card" class="shrink-0 bg-blue-950/30 border border-blue-900/40 rounded-2xl p-2.5 text-center backdrop-blur-md shadow-lg">
-            <p class="text-[11px] font-bold text-blue-300 flex items-center justify-center gap-1.5">
+        <!-- 4. Fixed Context Notice Box -->
+        <div id="feedback-card" class="shrink-0 bg-blue-950/30 border border-blue-900/40 rounded-2xl p-2 text-center backdrop-blur-md shadow-lg">
+            <p class="text-[10px] font-bold text-blue-300 flex items-center justify-center gap-1.5">
                 <svg class="w-3.5 h-3.5 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <span>5-Minute Counter Pickup Window</span>
             </p>
-            <p class="text-[10px] text-slate-400 mt-0.5">Select an item above and claim it at the counter within 5 minutes.</p>
+            <p class="text-[9px] text-slate-400 mt-0.5">Select an item above and claim it at the counter within 5 minutes.</p>
         </div>
 
-        <!-- Footer (Fixed Bottom) -->
-        <footer class="shrink-0 text-center border-t border-slate-900/80 pt-2 pb-1">
-            <p class="text-[10px] text-slate-600 font-medium">Ateneo de Davao University • FUSEE EE Lab System</p>
+        <!-- Fixed Footer -->
+        <footer class="shrink-0 text-center border-t border-slate-900/80 pt-1.5 pb-0.5">
+            <p class="text-[9px] text-slate-600 font-medium">Ateneo de Davao University • FUSEE EE Lab System</p>
         </footer>
     </main>
 

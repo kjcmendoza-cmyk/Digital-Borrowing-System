@@ -841,6 +841,32 @@ exportCsvBtn.addEventListener('click', async () => {
         const dateTag = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         const timeTag = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
+        // Calculate summary metrics
+        records.forEach(rec => {
+            let isOverdue = false;
+            const borrowTime = (rec.borrowed_at && rec.borrowed_at.toDate) 
+                ? rec.borrowed_at.toDate() 
+                : ((rec.requested_at && rec.requested_at.toDate) ? rec.requested_at.toDate() : null);
+
+            if (borrowTime) {
+                const closingTime = new Date(borrowTime);
+                closingTime.setHours(closeHour, closeMin, 0, 0);
+
+                if (rec.status === 'RETURNED' || rec.status === 'RETURNED_DAMAGED') {
+                    const returnTime = (rec.returned_at && rec.returned_at.toDate) 
+                        ? rec.returned_at.toDate() 
+                        : ((rec.staged_at && rec.staged_at.toDate) ? rec.staged_at.toDate() : null);
+                    if (returnTime && returnTime > closingTime) isOverdue = true;
+                } else {
+                    if (new Date() > closingTime) isOverdue = true;
+                }
+            }
+
+            if (['BORROWED', 'REQUESTED', 'STAGED'].includes(rec.status)) totalActive++;
+            if (['RETURNED', 'RETURNED_DAMAGED'].includes(rec.status)) totalReturned++;
+            if (isOverdue) totalOverdue++;
+        });
+
         // Generate Styled HTML Table string formatted for Excel / Google Sheets
         let html = `
             <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -862,41 +888,100 @@ exportCsvBtn.addEventListener('click', async () => {
                 <![endif]-->
                 <style>
                     body { font-family: 'Segoe UI', Arial, sans-serif; }
-                    table { border-collapse: collapse; width: 100%; }
-                    th, td { border: 1px solid #CBD5E1; padding: 8px 12px; text-align: left; font-size: 10pt; }
-                    .header-banner { background-color: #1E3A8A; color: #FFFFFF; font-weight: bold; font-size: 10.5pt; text-align: center; }
-                    .inst-title { font-size: 14pt; font-weight: bold; color: #1E3A8A; }
-                    .inst-sub { font-size: 11pt; font-weight: bold; color: #475569; }
-                    .inst-meta { font-size: 9pt; color: #64748B; font-style: italic; }
+                    table { border-collapse: collapse; margin-bottom: 20px; }
+                    th, td { border: 1px solid #CBD5E1; padding: 10px 14px; text-align: left; font-size: 10pt; vertical-align: middle; white-space: nowrap; }
+                    
+                    /* Title Section Styling */
+                    .title-cell { font-size: 15pt; font-weight: bold; color: #1B365D; border: none !important; padding-bottom: 4px; }
+                    .subtitle-cell { font-size: 11pt; font-weight: bold; color: #475569; border: none !important; padding-bottom: 4px; }
+                    .meta-cell { font-size: 9.5pt; color: #64748B; font-style: italic; border: none !important; padding-bottom: 16px; }
+                    .blank-row { border: none !important; background-color: transparent !important; height: 16px; }
+                    
+                    /* Header Banner Styling (Deep Navy Reference) */
+                    .header-banner { background-color: #1B365D; color: #FFFFFF; font-weight: bold; font-size: 10.5pt; text-align: center; }
+                    .header-banner th { border: 1px solid #0F2C59; color: #FFFFFF; background-color: #1B365D; text-align: center; padding: 12px 14px; }
+                    
+                    /* Summary Card Styling */
+                    .summary-header { background-color: #1B365D; color: #FFFFFF; font-weight: bold; text-align: left; }
+                    .summary-label { font-weight: 600; color: #334155; background-color: #F8FAFC; }
+                    .summary-val { font-weight: bold; text-align: right; color: #0F172A; background-color: #FFFFFF; }
+
+                    /* Status Badges Matching Reference Design */
                     .badge-returned { background-color: #DCFCE7; color: #166534; font-weight: bold; text-align: center; }
                     .badge-overdue { background-color: #FEE2E2; color: #991B1B; font-weight: bold; text-align: center; }
                     .badge-active { background-color: #DBEAFE; color: #1E40AF; font-weight: bold; text-align: center; }
                     .badge-pending { background-color: #FEF3C7; color: #92400E; font-weight: bold; text-align: center; }
-                    .summary-header { background-color: #1E3A8A; color: #FFFFFF; font-weight: bold; }
-                    .summary-val { font-weight: bold; text-align: right; }
                 </style>
             </head>
             <body>
                 <table>
-                    <tr><td colspan="13" class="inst-title" style="border:none;">ATENEO DE DAVAO UNIVERSITY - ELECTRICAL ENGINEERING LABORATORY</td></tr>
-                    <tr><td colspan="13" class="inst-sub" style="border:none;">ACTIVE BORROWINGS & LIVE MONITORING REPORT</td></tr>
-                    <tr><td colspan="13" class="inst-meta" style="border:none;">Generated On: ${dateTag} at ${timeTag} | Lab Operating Hours: Open ${labOperatingHours.open_time || '08:00'} - Close ${closeTimeString}</td></tr>
-                    <tr><td colspan="13" style="border:none;"></td></tr>
+                    <colgroup>
+                        <col width="150" />
+                        <col width="170" />
+                        <col width="140" />
+                        <col width="190" />
+                        <col width="240" />
+                        <col width="120" />
+                        <col width="220" />
+                        <col width="120" />
+                        <col width="170" />
+                        <col width="170" />
+                        <col width="160" />
+                        <col width="150" />
+                        <col width="190" />
+                    </colgroup>
+                    
+                    <!-- 1. TITLE HEADER AT THE VERY TOP -->
+                    <tr><td colspan="13" class="title-cell">ATENEO DE DAVAO UNIVERSITY - ELECTRICAL ENGINEERING LABORATORY</td></tr>
+                    <tr><td colspan="13" class="subtitle-cell">ACTIVE BORROWINGS & LIVE MONITORING REPORT</td></tr>
+                    <tr><td colspan="13" class="meta-cell">Generated On: ${dateTag} at ${timeTag} | Lab Operating Hours: Open ${labOperatingHours.open_time || '08:00'} - Close ${closeTimeString}</td></tr>
+                    
+                    <tr class="blank-row"><td colspan="13" class="blank-row"></td></tr>
+
+                    <!-- 2. SUMMARY METRICS CARD (ABOVE LOGBOOK TABLE) -->
+                    <tr class="summary-header">
+                        <td colspan="3" style="background-color:#1B365D; color:#FFFFFF; font-weight:bold;">SUMMARY METRICS</td>
+                        <td colspan="10" style="border:none;"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="summary-label">Total Records Logged</td>
+                        <td class="summary-val">${records.length}</td>
+                        <td colspan="10" style="border:none;"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="summary-label">Currently In-Use / Active</td>
+                        <td class="summary-val">${totalActive}</td>
+                        <td colspan="10" style="border:none;"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="summary-label">Completed Returns</td>
+                        <td class="summary-val">${totalReturned}</td>
+                        <td colspan="10" style="border:none;"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="summary-label">Overdue Incidents</td>
+                        <td class="summary-val">${totalOverdue}</td>
+                        <td colspan="10" style="border:none;"></td>
+                    </tr>
+
+                    <tr class="blank-row"><td colspan="13" class="blank-row"></td></tr>
+
+                    <!-- 3. MAIN LOGBOOK TABLE HEADERS -->
                     <thead>
                         <tr class="header-banner">
-                            <th>Record ID</th>
-                            <th>Asset Name</th>
-                            <th>Asset Tag / QR</th>
-                            <th>Borrower Name</th>
-                            <th>AdDU Email</th>
-                            <th>Student ID</th>
-                            <th>Program / Course</th>
-                            <th>Year Level</th>
-                            <th>Time Checked Out</th>
-                            <th>Time Returned</th>
-                            <th>Borrowing Status</th>
-                            <th>Overdue Status</th>
-                            <th>Condition / Notes</th>
+                            <th style="width:150px;">Record ID</th>
+                            <th style="width:170px;">Asset Name</th>
+                            <th style="width:140px;">Asset Tag / QR</th>
+                            <th style="width:190px;">Borrower Name</th>
+                            <th style="width:240px;">AdDU Email</th>
+                            <th style="width:120px;">Student ID</th>
+                            <th style="width:220px;">Program / Course</th>
+                            <th style="width:120px;">Year Level</th>
+                            <th style="width:170px;">Time Checked Out</th>
+                            <th style="width:170px;">Time Returned</th>
+                            <th style="width:160px;">Borrowing Status</th>
+                            <th style="width:150px;">Overdue Status</th>
+                            <th style="width:190px;">Condition / Notes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -936,10 +1021,6 @@ exportCsvBtn.addEventListener('click', async () => {
                 }
             }
 
-            if (['BORROWED', 'REQUESTED', 'STAGED'].includes(rec.status)) totalActive++;
-            if (['RETURNED', 'RETURNED_DAMAGED'].includes(rec.status)) totalReturned++;
-            if (isOverdue) totalOverdue++;
-
             let displayStatus = rec.status || 'UNKNOWN';
             let statusClass = 'badge-active';
             if (rec.status === 'BORROWED') { displayStatus = 'Checked Out'; statusClass = 'badge-active'; }
@@ -973,14 +1054,6 @@ exportCsvBtn.addEventListener('click', async () => {
 
         html += `
                     </tbody>
-                </table>
-                <br/>
-                <table style="width: 380px;">
-                    <tr class="summary-header"><td colspan="2">SUMMARY METRICS</td></tr>
-                    <tr><td>Total Records Logged</td><td class="summary-val">${records.length}</td></tr>
-                    <tr><td>Currently In-Use / Active</td><td class="summary-val">${totalActive}</td></tr>
-                    <tr><td>Completed Returns</td><td class="summary-val">${totalReturned}</td></tr>
-                    <tr><td>Overdue Incidents</td><td class="summary-val">${totalOverdue}</td></tr>
                 </table>
             </body>
             </html>

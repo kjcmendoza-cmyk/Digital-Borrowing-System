@@ -862,41 +862,59 @@ exportCsvBtn.addEventListener('click', async () => {
                 <![endif]-->
                 <style>
                     body { font-family: 'Segoe UI', Arial, sans-serif; }
-                    table { border-collapse: collapse; width: 100%; }
-                    th, td { border: 1px solid #CBD5E1; padding: 8px 12px; text-align: left; font-size: 10pt; }
-                    .header-banner { background-color: #1E3A8A; color: #FFFFFF; font-weight: bold; font-size: 10.5pt; text-align: center; }
-                    .inst-title { font-size: 14pt; font-weight: bold; color: #1E3A8A; }
-                    .inst-sub { font-size: 11pt; font-weight: bold; color: #475569; }
-                    .inst-meta { font-size: 9pt; color: #64748B; font-style: italic; }
+                    table { border-collapse: collapse; }
+                    th, td { border: 1px solid #CBD5E1; padding: 10px 14px; text-align: left; font-size: 10pt; vertical-align: middle; }
+                    .header-banner th { background-color: #1E3A8A; color: #FFFFFF; font-weight: bold; font-size: 10.5pt; text-align: center; border: 1px solid #1E3A8A; }
+                    .inst-title { font-size: 15pt; font-weight: bold; color: #1E3A8A; padding-bottom: 4px; }
+                    .inst-sub { font-size: 12pt; font-weight: bold; color: #334155; padding-bottom: 4px; }
+                    .inst-meta { font-size: 9.5pt; color: #64748B; font-style: italic; padding-bottom: 12px; }
                     .badge-returned { background-color: #DCFCE7; color: #166534; font-weight: bold; text-align: center; }
                     .badge-overdue { background-color: #FEE2E2; color: #991B1B; font-weight: bold; text-align: center; }
                     .badge-active { background-color: #DBEAFE; color: #1E40AF; font-weight: bold; text-align: center; }
                     .badge-pending { background-color: #FEF3C7; color: #92400E; font-weight: bold; text-align: center; }
-                    .summary-header { background-color: #1E3A8A; color: #FFFFFF; font-weight: bold; }
+                    .summary-header { background-color: #1E3A8A; color: #FFFFFF; font-weight: bold; text-align: center; }
                     .summary-val { font-weight: bold; text-align: right; }
                 </style>
             </head>
             <body>
                 <table>
+                    <!-- Explicit Column Widths for immediate clean spacing -->
+                    <col style="width: 160px;" />
+                    <col style="width: 150px;" />
+                    <col style="width: 130px;" />
+                    <col style="width: 170px;" />
+                    <col style="width: 230px;" />
+                    <col style="width: 140px;" />
+                    <col style="width: 200px;" />
+                    <col style="width: 110px;" />
+                    <col style="width: 160px;" />
+                    <col style="width: 160px;" />
+                    <col style="width: 150px;" />
+                    <col style="width: 130px;" />
+                    <col style="width: 160px;" />
+
+                    <!-- 1. INSTITUTIONAL HEADER AT THE TOP -->
                     <tr><td colspan="13" class="inst-title" style="border:none;">ATENEO DE DAVAO UNIVERSITY - ELECTRICAL ENGINEERING LABORATORY</td></tr>
                     <tr><td colspan="13" class="inst-sub" style="border:none;">ACTIVE BORROWINGS & LIVE MONITORING REPORT</td></tr>
                     <tr><td colspan="13" class="inst-meta" style="border:none;">Generated On: ${dateTag} at ${timeTag} | Lab Operating Hours: Open ${labOperatingHours.open_time || '08:00'} - Close ${closeTimeString}</td></tr>
-                    <tr><td colspan="13" style="border:none;"></td></tr>
+                    <tr><td colspan="13" style="border:none; height: 10px;"></td></tr>
+
+                    <!-- 2. TABLE HEADERS -->
                     <thead>
                         <tr class="header-banner">
-                            <th>Record ID</th>
-                            <th>Asset Name</th>
-                            <th>Asset Tag / QR</th>
-                            <th>Borrower Name</th>
-                            <th>AdDU Email</th>
-                            <th>Student ID</th>
-                            <th>Program / Course</th>
-                            <th>Year Level</th>
-                            <th>Time Checked Out</th>
-                            <th>Time Returned</th>
-                            <th>Borrowing Status</th>
-                            <th>Overdue Status</th>
-                            <th>Condition / Notes</th>
+                            <th style="width: 160px;">Record ID</th>
+                            <th style="width: 150px;">Asset Name</th>
+                            <th style="width: 130px;">Asset Tag / QR</th>
+                            <th style="width: 170px;">Borrower Name</th>
+                            <th style="width: 230px;">AdDU Email</th>
+                            <th style="width: 140px;">Student ID</th>
+                            <th style="width: 200px;">Program / Course</th>
+                            <th style="width: 110px;">Year Level</th>
+                            <th style="width: 160px;">Time Checked Out</th>
+                            <th style="width: 160px;">Time Returned</th>
+                            <th style="width: 150px;">Borrowing Status</th>
+                            <th style="width: 130px;">Overdue Status</th>
+                            <th style="width: 160px;">Condition / Notes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -975,7 +993,8 @@ exportCsvBtn.addEventListener('click', async () => {
                     </tbody>
                 </table>
                 <br/>
-                <table style="width: 380px;">
+                <br/>
+                <table style="width: 400px; border-collapse: collapse;">
                     <tr class="summary-header"><td colspan="2">SUMMARY METRICS</td></tr>
                     <tr><td>Total Records Logged</td><td class="summary-val">${records.length}</td></tr>
                     <tr><td>Currently In-Use / Active</td><td class="summary-val">${totalActive}</td></tr>
